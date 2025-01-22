@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-from neurotask.experiments.tmt.metrics_calculator import calculate_and_save_metrics
+from neurotask.tmt.metrics_calculator import calculate_and_save_metrics
 
 
 class TMTAnalyzer:

@@ -4,12 +4,12 @@ from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
 
-from neurotask.experiments.tmt.metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
+from neurotask.tmt.metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
     calculate_speeds_between_cursor_positions, \
     calculate_accelerations_between_cursor_positions, \
     get_correct_and_incorrect_segments
-from neurotask.experiments.tmt.model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
-from neurotask.experiments.tmt.segmentation.segmentation import calculate_segmentation_trial_metrics, \
+from neurotask.tmt.model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
+from neurotask.tmt.segmentation.segmentation import calculate_segmentation_trial_metrics, \
     calculate_speed_threshold_for_all_subjects
 
 

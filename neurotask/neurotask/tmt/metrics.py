@@ -2,7 +2,7 @@ import logging
 import math
 from typing import List, Tuple, Optional
 
-from neurotask.experiments.tmt.model.tmt_model import Coordinate, TMTTrial, TMTTarget, CursorInfo
+from neurotask.tmt.model.tmt_model import Coordinate, TMTTrial, TMTTarget, CursorInfo
 
 
 def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:

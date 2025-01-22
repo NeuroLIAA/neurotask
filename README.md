@@ -31,7 +31,7 @@ pip install -e .
 Here's a simple example of how to use the **neurotask** library to perform a Trail Making Test (TMT) analysis:
 
 ```python
-from neurotask.experiments.tmt.tmt_analyzer import TMTAnalyzer
+from neurotask.tmt.tmt_analyzer import TMTAnalyzer
 from /path/to/your/custom_mapper import CustomMapper
   
 # Initialize the TMT Analyzer
