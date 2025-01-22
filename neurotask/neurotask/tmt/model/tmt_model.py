@@ -72,10 +72,16 @@ class TMTTrial:
         Definimos esto para que nos permita calcular medidas de velocidad y aceleración.
         Ademas, si el trial tiene un punto de inicio personalizado, este debe estar definido.
         """
-        valid_length = len(self.get_cursor_trail_from_start()) > 2
-        valid_start_configuration = (self.with_custom_start is True) == (self.start is not None)
+        valid_length = self.is_valid_length()
+        valid_start_configuration = self.is_valid_start_configuration()
 
         return valid_length and valid_start_configuration
+
+    def is_valid_start_configuration(self):
+        return (self.with_custom_start is True) == (self.start is not None)
+
+    def is_valid_length(self):
+        return len(self.get_cursor_trail_from_start()) > 2
 
 
 from dataclasses import dataclass

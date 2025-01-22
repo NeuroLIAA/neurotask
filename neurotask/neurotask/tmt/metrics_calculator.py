@@ -46,7 +46,8 @@ def generate_rows_for_subject(
         # If the trial is not valid from the start, mark it as invalid.
         if not trial.is_valid():
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
-            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold))
+            rows.append(
+                create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause="INVALID_MODEL"))
             continue
 
         try:
@@ -66,7 +67,8 @@ def generate_rows_for_subject(
                     f"Trial {trial.id} of subject {subject_id} has less than {correct_targets_minimum} correct target touches." +
                     f"Subject has {correct_targets_touches} correct target touches."
                 )
-                rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold))
+                rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
+                                                     invalid_cause="MINIMUM_TARGETS"))
                 continue
 
             cutoff_trial = cut_trial_at_minimum_correct_targets(
@@ -108,7 +110,7 @@ def generate_rows_for_subject(
         except Exception as e:
             logging.error(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid because of error.")
-            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold))
+            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause="ERROR"))
 
     return rows
 
@@ -131,8 +133,15 @@ def create_invalid_trial_row(
         subject: TMTSubject,
         subject_id: str,
         trial: TMTTrial,
-        speed_threshold: float
+        speed_threshold: float,
+        invalid_cause: str
 ) -> Dict[str, Any]:
+    if invalid_cause == "INVALID_MODEL":
+        if not trial.is_valid_start_configuration():
+            invalid_cause = "INVALID_START_CONFIGURATION"
+        elif not trial.is_valid_length():
+            invalid_cause = "INVALID_LENGTH"
+
     return {
         "subject_id": subject_id,
         "trial_id": trial.id,
@@ -153,7 +162,8 @@ def create_invalid_trial_row(
         "std_acceleration": np.nan,
         "peak_acceleration": np.nan,
         "hesitation_distance": np.nan,
-        "hesitation_time": np.nan
+        "hesitation_time": np.nan,
+        "invalid_cause": invalid_cause
     }
 
 
