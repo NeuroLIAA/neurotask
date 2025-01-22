@@ -2,10 +2,10 @@ from typing import Dict
 
 from matplotlib import pyplot as plt
 
-from neurotask.tmt.metrics import calculate_speeds_between_cursor_positions, \
+from ..metrics import calculate_speeds_between_cursor_positions, \
     calculate_accelerations_between_cursor_positions, get_correct_and_incorrect_segments
-from neurotask.tmt.model.tmt_model import TMTTrial, TMTExperiment, TrialType
-from neurotask.tmt.visualization.utils import calculate_median_segments, \
+from ..model.tmt_model import TMTTrial, TMTExperiment, TrialType
+from ..visualization.utils import calculate_median_segments, \
     average_performance_by_five_by_five_year_age_groups
 
 

@@ -3,8 +3,8 @@ from typing import List, Tuple, Dict
 
 import numpy as np
 
-from neurotask.tmt.metrics import get_correct_and_incorrect_segments
-from neurotask.tmt.model.tmt_model import TMTExperiment
+from ..metrics import get_correct_and_incorrect_segments
+from ..model.tmt_model import TMTExperiment
 
 
 def average_correct_and_incorrect_segments(experiment: TMTExperiment) -> Tuple[Dict[str, int], Dict[str, int]]:

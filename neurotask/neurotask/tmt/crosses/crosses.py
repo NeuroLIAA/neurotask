@@ -1,6 +1,6 @@
 from typing import List, Tuple
 
-from neurotask.tmt.model.tmt_model import TMTTrial, Coordinate
+from ..model.tmt_model import TMTTrial, Coordinate
 
 
 def calculate_crosses(trial: TMTTrial, time_threshold: float = 500) -> Tuple[
