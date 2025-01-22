@@ -7,10 +7,10 @@ def read_requirements(filename):
 
 
 setup(
-    name="neuropsych",
+    name="neurotask",
     version="0.0.0",
     author="NeuroLIAA",
-    description="A Python package for handling neuro psych data",
+    description="A Python package for analyzing neuropscyhological tasks data",
     long_description=open('README.md').read(),
     long_description_content_type="text/markdown",
     url="https://github.com/NeuroLIAA/analisis-neuropruebas",
