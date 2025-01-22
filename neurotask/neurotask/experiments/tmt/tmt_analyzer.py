@@ -3,8 +3,8 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
-
 from neurotask.experiments.tmt.metrics_calculator import calculate_and_save_metrics
+
 
 class TMTAnalyzer:
     """
@@ -87,3 +87,13 @@ class TMTAnalyzer:
                                "Did you forget to call run()?")
 
         return self.metrics_df
+
+    def get_experiment(self):
+        """
+        Returns the Experiment object that was created in `run()`.
+        Raises an error if run() has not been called yet.
+        """
+        if self.experiment is None:
+            raise RuntimeError("No experiment has been loaded yet. "
+                               "Did you forget to call run()?")
+        return self.experiment
