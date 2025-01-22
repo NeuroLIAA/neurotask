@@ -4,8 +4,8 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 
-from neuropsych.experiments.tmt.metrics import calculate_distance, calculate_speeds, calculate_speeds_between_cursor_positions
-from neuropsych.experiments.tmt.model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
+from neurotask.experiments.tmt.metrics import calculate_distance, calculate_speeds, calculate_speeds_between_cursor_positions
+from neurotask.experiments.tmt.model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 
 def speed_increases_over_consecutive_points(

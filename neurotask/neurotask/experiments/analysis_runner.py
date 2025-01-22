@@ -4,7 +4,7 @@ from typing import Optional
 
 import pandas as pd
 
-from neuropsych.experiments.tmt.metrics_calculator import calculate_and_save_metrics
+from neurotask.experiments.tmt.metrics_calculator import calculate_and_save_metrics
 
 
 def analyze(
