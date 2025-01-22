@@ -6,32 +6,7 @@ import pandas as pd
 
 from neurotask.experiments.tmt.metrics_calculator import calculate_and_save_metrics
 
-
-def analyze(
-        mapper,
-        dataset_path: str,
-        output_path: str,
-        correct_targets_minimum: int,
-        consecutive_points: int,
-):
-    experiment = mapper.map(dataset_path, None)
-
-    logging.info(f"Experiment loaded. Number of subjects: {len(experiment.subjects)}")
-
-    # Create output directory if it does not exist
-    Path(output_path).mkdir(parents=True, exist_ok=True)
-
-    output_metrics_path = Path(output_path) / "metrics.csv"
-
-    calculate_and_save_metrics(
-        experiment,
-        output_metrics_path,
-        correct_targets_minimum,
-        consecutive_points
-    )
-
-
-class TMTAnalysis:
+class TMTAnalyzer:
     """
     Encapsulates the analysis logic. When you instantiate TMTAnalysis, you provide
     the paths and parameters. Then, by calling `run()`, it will map the dataset,
