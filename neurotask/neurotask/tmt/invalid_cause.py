@@ -1,0 +1,15 @@
+from enum import Enum
+
+
+class InvalidCause(Enum):
+    """
+    Enumeración de las posibles causas de inválidez de un trial.
+    """
+
+    CUT_CRITERIA_ERROR = "CUT_CRITERIA_ERROR"
+    UNKNOWN_ERROR = "UNKNOWN_ERROR"
+    UNDER_CORRECT_TARGETS_MINIMUM = "UNDER_CORRECT_TARGETS_MINIMUM"
+    INVALID_LENGTH = "INVALID_LENGTH"
+    INVALID_START_CONFIGURATION = "INVALID_START_CONFIGURATION"
+    INVALID_MODEL = "INVALID_MODEL"
+

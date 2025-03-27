@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
 
+from .invalid_cause import InvalidCause
 from .metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
     calculate_speeds_between_cursor_positions, \
     calculate_accelerations_between_cursor_positions, \
@@ -13,12 +14,48 @@ from .segmentation.segmentation import calculate_segmentation_trial_metrics, \
     calculate_speed_threshold_for_all_subjects
 
 
+def cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria):
+    if cut_criteria == "MINIMUM_TARGETS":
+        if correct_targets_minimum is None:
+            raise ValueError("Minimum targets criteria requires a minimum number of correct targets.")
+        return cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial)
+
+    raise ValueError(f"Invalid cut criteria: {cut_criteria}")
+
+
+def cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial):
+    correct_targets_touches, _ = number_of_correct_and_incorrect_segments(
+        trial,
+        subject.target_radius
+    )
+
+    # If the number of correct target touches is at least the required minimum,
+    # cut the trial at that number for further analysis.
+    # Otherwise, mark the trial as invalid.
+    is_valid_number_of_correct_targets = correct_targets_touches >= correct_targets_minimum
+    if not is_valid_number_of_correct_targets:
+        logging.warning(
+            f"Trial {trial.id} of subject {subject_id} has less than {correct_targets_minimum} correct target touches." +
+            f"Subject has {correct_targets_touches} correct target touches."
+        )
+        raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
+
+    cutoff_trial = cut_trial_at_minimum_correct_targets(
+        trial,
+        correct_targets_minimum,
+        subject.target_radius
+    )
+
+    return cutoff_trial
+
+
 def generate_rows_for_subject(
         subject_id: str,
         subject: TMTSubject,
         correct_targets_minimum: int,
         speed_threshold: float,
-        consecutive_points: int
+        consecutive_points: int,
+        cut_criteria: str
 ) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
@@ -38,6 +75,7 @@ def generate_rows_for_subject(
     :param correct_targets_minimum: The minimum number of correct target touches required to consider the trial valid.
     :param speed_threshold: The speed threshold for certain calculations.
     :param consecutive_points: The number of consecutive points to consider in the metrics.
+    :param cut_criteria: The criteria to use for cutting trials. If None, no cutting is performed.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
     rows = []
@@ -47,56 +85,45 @@ def generate_rows_for_subject(
         if not trial.is_valid():
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
             rows.append(
-                create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause="INVALID_MODEL"))
+                create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
+                                         invalid_cause=InvalidCause.INVALID_MODEL))
             continue
 
         try:
 
-            correct_targets_touches, _ = number_of_correct_and_incorrect_segments(
-                trial,
+            if cut_criteria is not None:
+                try:
+                    processed_trial = cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
+                except Exception:
+                    rows.append(create_invalid_trial_row(subject, subject_id, trial,
+                                                         speed_threshold,
+                                                         invalid_cause=InvalidCause.CUT_CRITERIA_ERROR))
+                    continue
+            else:
+                processed_trial = trial
+
+            correct_targets_touches, wrong_targets_touches = number_of_correct_and_incorrect_segments(
+                processed_trial,
                 subject.target_radius
             )
 
-            # If the number of correct target touches is at least the required minimum,
-            # cut the trial at that number for further analysis.
-            # Otherwise, mark the trial as invalid.
-            is_valid_number_of_correct_targets = correct_targets_touches >= correct_targets_minimum
-
-            if not is_valid_number_of_correct_targets:
-                logging.warning(
-                    f"Trial {trial.id} of subject {subject_id} has less than {correct_targets_minimum} correct target touches." +
-                    f"Subject has {correct_targets_touches} correct target touches."
-                )
-                rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                                     invalid_cause="MINIMUM_TARGETS"))
-                continue
-
-            cutoff_trial = cut_trial_at_minimum_correct_targets(
-                trial,
-                correct_targets_minimum,
-                subject.target_radius
-            )
-
-            cutoff_correct_targets_touches, cutoff_wrong_targets_touches = number_of_correct_and_incorrect_segments(
-                cutoff_trial,
-                subject.target_radius
-            )
-
-            # Ensure that the cutoff was successful.
-            if cutoff_correct_targets_touches != correct_targets_minimum:
+            if correct_targets_touches != correct_targets_minimum:
                 error_msg = (
-                    f"Failed to properly cut trial {trial.id} of subject {subject_id} at "
-                    f"{correct_targets_minimum} correct target touches. "
-                    f"Obtained {cutoff_correct_targets_touches} correct target touches instead."
+                    f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+                    f"but the minimum required is {correct_targets_minimum}."
                 )
-                raise ValueError(error_msg)
+                logging.warning(error_msg)
+                invalid_cause = InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM
+                rows.append(
+                    create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause=invalid_cause))
+                continue
 
             # Compute final metrics on the cutoff trial.
             trial_metrics = compute_trial_metrics(
                 subject,
-                cutoff_trial,
-                cutoff_correct_targets_touches,
-                cutoff_wrong_targets_touches,
+                processed_trial,
+                correct_targets_touches,
+                wrong_targets_touches,
                 speed_threshold,
                 consecutive_points
             )
@@ -110,7 +137,8 @@ def generate_rows_for_subject(
         except Exception as e:
             logging.error(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid because of error.")
-            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause="ERROR"))
+            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
+                                                 invalid_cause=InvalidCause.UNKNOWN_ERROR))
 
     return rows
 
@@ -134,13 +162,13 @@ def create_invalid_trial_row(
         subject_id: str,
         trial: TMTTrial,
         speed_threshold: float,
-        invalid_cause: str
+        invalid_cause: InvalidCause
 ) -> Dict[str, Any]:
-    if invalid_cause == "INVALID_MODEL":
+    if invalid_cause == InvalidCause.INVALID_MODEL:
         if not trial.is_valid_start_configuration():
-            invalid_cause = "INVALID_START_CONFIGURATION"
+            invalid_cause = InvalidCause.INVALID_START_CONFIGURATION
         elif not trial.is_valid_length():
-            invalid_cause = "INVALID_LENGTH"
+            invalid_cause = InvalidCause.INVALID_LENGTH
 
     return {
         "subject_id": subject_id,
@@ -163,7 +191,7 @@ def create_invalid_trial_row(
         "peak_acceleration": np.nan,
         "hesitation_distance": np.nan,
         "hesitation_time": np.nan,
-        "invalid_cause": invalid_cause
+        "invalid_cause": invalid_cause.name
     }
 
 
