@@ -3,7 +3,7 @@ from enum import Enum
 
 class InvalidCause(Enum):
     """
-    Enumeración de las posibles causas de inválidez de un trial.
+    Enumeration of possible causes of invalid trials in TMT.
     """
 
     CUT_CRITERIA_ERROR = "CUT_CRITERIA_ERROR"

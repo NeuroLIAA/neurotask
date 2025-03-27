@@ -4,6 +4,7 @@ from typing import List, Dict, Any
 import numpy as np
 import pandas as pd
 
+from .cut_criteria import CutCriteria
 from .invalid_cause import InvalidCause
 from .metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
     calculate_speeds_between_cursor_positions, \
@@ -15,7 +16,7 @@ from .segmentation.segmentation import calculate_segmentation_trial_metrics, \
 
 
 def cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria):
-    if cut_criteria == "MINIMUM_TARGETS":
+    if cut_criteria == CutCriteria.MINIMUM_TARGETS:
         if correct_targets_minimum is None:
             raise ValueError("Minimum targets criteria requires a minimum number of correct targets.")
         return cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial)
@@ -55,7 +56,7 @@ def generate_rows_for_subject(
         correct_targets_minimum: int,
         speed_threshold: float,
         consecutive_points: int,
-        cut_criteria: str
+        cut_criteria: CutCriteria
 ) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
@@ -293,7 +294,8 @@ def compute_speed_and_acceleration_metrics(
 
 
 def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
-                               correct_targets_minimum: int, consecutive_point) -> pd.DataFrame:
+                               correct_targets_minimum: int, consecutive_point,
+                               cut_criteria: CutCriteria) -> pd.DataFrame:
     rows = []
 
     speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(experiment)
@@ -302,7 +304,8 @@ def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
     for subject_id, subject in experiment.subjects.items():
         try:
             subject_rows = generate_rows_for_subject(subject_id, subject, correct_targets_minimum,
-                                                     speed_threshold_by_subject[subject_id], consecutive_point)
+                                                     speed_threshold_by_subject[subject_id], consecutive_point,
+                                                     cut_criteria)
             rows.extend(subject_rows)
         except Exception:
             logging.exception(f"Error processing subject {subject_id}")

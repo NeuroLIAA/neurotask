@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+
+from .cut_criteria import CutCriteria
 from .metrics_calculator import calculate_and_save_metrics
 
 
@@ -48,7 +50,8 @@ class TMTAnalyzer:
         self.metrics_df: Optional[pd.DataFrame] = None
         self.output_metrics_path: Optional[Path] = None
 
-    def run(self, correct_targets_minimum: Optional[int] = None, consecutive_points: Optional[int] = None) -> None:
+    def run(self, correct_targets_minimum: Optional[int] = None, consecutive_points: Optional[int] = None,
+            cut_criteria: str = None) -> None:
         """
         Execute the analysis pipeline:
         1. Map the dataset to create an Experiment object.
@@ -74,7 +77,8 @@ class TMTAnalyzer:
             experiment=self.experiment,
             save_path=self.output_metrics_path,
             correct_targets_minimum=ctm,
-            consecutive_point=cp
+            consecutive_point=cp,
+            cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None
         )
 
     def get_metrics_dataframe(self) -> pd.DataFrame:
