@@ -108,16 +108,16 @@ def generate_rows_for_subject(
                 subject.target_radius
             )
 
-            if correct_targets_touches != correct_targets_minimum:
-                error_msg = (
-                    f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
-                    f"but the minimum required is {correct_targets_minimum}."
-                )
-                logging.warning(error_msg)
-                invalid_cause = InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM
-                rows.append(
-                    create_invalid_trial_row(subject, subject_id, trial, speed_threshold, invalid_cause=invalid_cause))
-                continue
+            if correct_targets_minimum is not None:
+                if correct_targets_touches < correct_targets_minimum:
+                    logging.warning(
+                        f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+                        f"but the minimum required is {correct_targets_minimum}."
+                    )
+                    rows.append(
+                        create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
+                                                 invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM))
+                    continue
 
             # Compute final metrics on the cutoff trial.
             trial_metrics = compute_trial_metrics(

@@ -73,6 +73,9 @@ class TMTAnalyzer:
         ctm = correct_targets_minimum if correct_targets_minimum is not None else self.correct_targets_minimum
         cp = consecutive_points if consecutive_points is not None else self.consecutive_points
 
+        if cp is None:
+            raise ValueError("consecutive_points must be provided")
+
         self.metrics_df = calculate_and_save_metrics(
             experiment=self.experiment,
             save_path=self.output_metrics_path,
