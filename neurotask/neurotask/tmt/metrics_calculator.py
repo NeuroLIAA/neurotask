@@ -1,147 +1,140 @@
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
 
-from .cut_criteria import CutCriteria
+from .crosses.crosses import calculate_crosses_for_trial
+from .cut_criteria.cut_criteria import CutCriteria
+from .cut_criteria.cut_implementation import cut_trial
 from .invalid_cause import InvalidCause
 from .metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
     calculate_speeds_between_cursor_positions, \
-    calculate_accelerations_between_cursor_positions, \
-    get_correct_and_incorrect_segments
+    calculate_accelerations_between_cursor_positions
 from .model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
 from .segmentation.segmentation import calculate_segmentation_trial_metrics, \
     calculate_speed_threshold_for_all_subjects
 
 
-def cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria):
-    if cut_criteria == CutCriteria.MINIMUM_TARGETS:
-        if correct_targets_minimum is None:
-            raise ValueError("Minimum targets criteria requires a minimum number of correct targets.")
-        return cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial)
-
-    raise ValueError(f"Invalid cut criteria: {cut_criteria}")
-
-
-def cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial):
-    correct_targets_touches, _ = number_of_correct_and_incorrect_segments(
-        trial,
-        subject.target_radius
-    )
-
-    # If the number of correct target touches is at least the required minimum,
-    # cut the trial at that number for further analysis.
-    # Otherwise, mark the trial as invalid.
-    is_valid_number_of_correct_targets = correct_targets_touches >= correct_targets_minimum
-    if not is_valid_number_of_correct_targets:
-        logging.warning(
-            f"Trial {trial.id} of subject {subject_id} has less than {correct_targets_minimum} correct target touches." +
-            f"Subject has {correct_targets_touches} correct target touches."
-        )
-        raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
-
-    cutoff_trial = cut_trial_at_minimum_correct_targets(
-        trial,
-        correct_targets_minimum,
-        subject.target_radius
-    )
-
-    return cutoff_trial
-
-
-def generate_rows_for_subject(
-        subject_id: str,
-        subject: TMTSubject,
-        correct_targets_minimum: int,
-        speed_threshold: float,
-        consecutive_points: int,
-        cut_criteria: CutCriteria
-) -> List[Dict[str, Any]]:
+def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
+                              speed_threshold: float, consecutive_points: int, cut_criteria: CutCriteria,
+                              calculate_crosses: bool) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
     for valid and invalid trials of a single subject.
 
-    Steps:
-    1. For each trial in a subject's testing trials:
-       - Check if the trial is valid.
-       - If valid, attempt to cut the trial at the specified minimum of correct target touches.
-         * If successful, compute and update metrics.
-         * If not, mark the trial as invalid.
-       - If invalid from the start or an error occurs, mark the trial as invalid.
-    2. Return a list of dictionaries, each containing relevant trial data and metrics.
+    For each trial:
+      1. If the trial is invalid from the start, mark it as invalid.
+      2. Otherwise, if cut criteria are provided, attempt to cut the trial.
+         If cutting fails, mark the trial as invalid.
+      3. Compute the number of correct and incorrect target touches.
+         If the correct targets count is below the minimum, mark the trial invalid.
+      4. If all checks pass, compute trial metrics and combine with general trial info.
 
     :param subject_id: A unique identifier for the subject.
     :param subject: The subject object containing personal info and trials.
-    :param correct_targets_minimum: The minimum number of correct target touches required to consider the trial valid.
-    :param speed_threshold: The speed threshold for certain calculations.
-    :param consecutive_points: The number of consecutive points to consider in the metrics.
-    :param cut_criteria: The criteria to use for cutting trials. If None, no cutting is performed.
+    :param correct_targets_minimum: The minimum number of correct target touches required.
+    :param speed_threshold: The speed threshold for calculations.
+    :param consecutive_points: The number of consecutive points to consider.
+    :param cut_criteria: The criteria to use for cutting trials; if None, no cutting is performed.
+    :param calculate_crosses: Whether to calculate crosses.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
     rows = []
 
     for trial in subject.testing_trials:
-        # If the trial is not valid from the start, mark it as invalid.
+        # Check initial validity.
         if not trial.is_valid():
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
             rows.append(
-                create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                         invalid_cause=InvalidCause.INVALID_MODEL))
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.INVALID_MODEL
+                )
+            )
             continue
 
         try:
+            processed_trial = trial
 
+            # Apply cut criteria if provided.
             if cut_criteria is not None:
-                try:
-                    processed_trial = cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
-                except Exception:
-                    rows.append(create_invalid_trial_row(subject, subject_id, trial,
-                                                         speed_threshold,
-                                                         invalid_cause=InvalidCause.CUT_CRITERIA_ERROR))
+                processed_trial = _attempt_cut_trial(
+                    trial, correct_targets_minimum, subject, subject_id, cut_criteria, speed_threshold, rows
+                )
+                if processed_trial is None:
                     continue
-            else:
-                processed_trial = trial
 
-            correct_targets_touches, wrong_targets_touches = number_of_correct_and_incorrect_segments(
-                processed_trial,
-                subject.target_radius
+            # Compute target touches.
+            correct_touches, wrong_touches = number_of_correct_and_incorrect_segments(
+                processed_trial, subject.target_radius
             )
 
+            # Check if the trial meets the minimum correct touches.
             if correct_targets_minimum is not None:
-                if correct_targets_touches < correct_targets_minimum:
+                if correct_touches < correct_targets_minimum:
                     logging.warning(
-                        f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+                        f"Trial {trial.id} of subject {subject_id} has {correct_touches} correct target touches, "
                         f"but the minimum required is {correct_targets_minimum}."
                     )
                     rows.append(
-                        create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                                 invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM))
+                        create_invalid_trial_row(
+                            subject, subject_id, trial, speed_threshold,
+                            invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM
+                        )
+                    )
                     continue
 
-            # Compute final metrics on the cutoff trial.
+            # Compute trial metrics.
             trial_metrics = compute_trial_metrics(
-                subject,
-                processed_trial,
-                correct_targets_touches,
-                wrong_targets_touches,
-                speed_threshold,
-                consecutive_points
+                subject, processed_trial, correct_touches, wrong_touches, speed_threshold, consecutive_points,
+                calculate_crosses
             )
 
-            valid_trial_row = general_trial_info(speed_threshold, subject, subject_id, trial)
-            valid_trial_row.update(trial_metrics)
-
-            rows.append(valid_trial_row)
-
+            # Combine general trial info with metrics.
+            valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
+            valid_row.update(trial_metrics)
+            rows.append(valid_row)
 
         except Exception as e:
-            logging.error(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
-            logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid because of error.")
-            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                                 invalid_cause=InvalidCause.UNKNOWN_ERROR))
+            logging.exception(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
+            rows.append(
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.UNKNOWN_ERROR
+                )
+            )
 
     return rows
+
+
+def _attempt_cut_trial(
+        trial: Any,
+        correct_targets_minimum: int,
+        subject: TMTSubject,
+        subject_id: str,
+        cut_criteria: CutCriteria,
+        speed_threshold: float,
+        rows: List[Dict[str, Any]]
+) -> Optional[Any]:
+    """
+    Attempt to cut a trial using the specified criteria.
+
+    If cutting fails, the function logs a warning and appends an invalid trial row.
+
+    :return: The processed trial if successful, or None if an error occurred.
+    """
+    try:
+        return cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
+    except Exception as e:
+        logging.exception(f"Cut trial error for trial {trial.id} of subject {subject_id}: {e}")
+        rows.append(
+            create_invalid_trial_row(
+                subject, subject_id, trial, speed_threshold,
+                invalid_cause=InvalidCause.CUT_CRITERIA_ERROR
+            )
+        )
+        return None
 
 
 def general_trial_info(speed_threshold, subject, subject_id, trial):
@@ -202,162 +195,181 @@ def compute_trial_metrics(
         correct_targets_touches: int,
         wrong_targets_touches: int,
         speed_threshold: float,
-        consecutive_points: int
+        consecutive_points: int,
+        calculate_crosses: bool
 ) -> Dict[str, Any]:
     """
     Compute all relevant metrics for a single trial in the TMT experiment.
 
     This function computes the following metrics:
-    - Total distance
-    - Reaction time (RT)
-    - Number of correct and wrong target touches
-    - Speed and acceleration metrics
-    - Segmentation metrics
-    - Number of crosses
+      - Total distance traveled by the cursor.
+      - Reaction time (rt) of the trial.
+      - Number of correct and wrong target touches.
+      - Speed and acceleration statistics.
+      - Segmentation metrics.
+      - (Stub) Number of crosses.
 
-    :param subject: The subject object to which the trial belongs.
-    :param trial: The trial object for which to compute metrics.
-    :param correct_targets_touches: The number of correct target touches in the trial.
-    :param wrong_targets_touches: The number of wrong target touches in the trial.
-    :param speed_threshold: The speed threshold for certain calculations.
-    :param consecutive_points: The number of consecutive points to consider in the metrics.
-    :return: A dictionary containing all computed metrics for the trial.
+    Note:
+      The number of crosses is currently a stub (set to 0) and should be replaced with an
+      actual computation if needed.
+
+    Args:
+        subject (TMTSubject): The subject associated with the trial.
+        trial (TMTTrial): The trial for which to compute metrics.
+        correct_targets_touches (int): Number of correct target touches.
+        wrong_targets_touches (int): Number of wrong target touches.
+        speed_threshold (float): Speed threshold for segmentation metrics.
+        consecutive_points (int): Number of consecutive points for segmentation metrics.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the computed metrics.
     """
-
-    # Compute total distance, rt, correct and wrong targets touches
-    row_metrics = {
+    # Base metrics: distance, reaction time, and target touches.
+    metrics = {
         "total_distance": calculate_total_distance(trial),
         "rt": trial.rt,
         "correct_targets_touches": correct_targets_touches,
         "wrong_targets_touches": wrong_targets_touches
     }
 
-    # Compute speed and acceleration metrics
-    speed_and_acc_metrics = compute_speed_and_acceleration_metrics(trial)
-    row_metrics.update(speed_and_acc_metrics)
+    # Add speed and acceleration metrics.
+    metrics.update(compute_speed_and_acceleration_metrics(trial))
 
-    # Compute segmentation metrics
-    segmentation_metrics = calculate_segmentation_trial_metrics(
+    # Add segmentation metrics.
+    segmentation = calculate_segmentation_trial_metrics(
         trial,
         subject.target_radius,
         speed_threshold,
         consecutive_points
     )
-    row_metrics.update(segmentation_metrics)
 
-    # Calculate the number of crosses (This takes too much time)
-    number_of_crosses, _ = (0, None)  # TODO GIAN calculate_crosses(trial)
-    row_metrics["number_of_crosses"] = number_of_crosses
+    metrics.update(segmentation)
 
-    return row_metrics
-
-
-def compute_speed_and_acceleration_metrics(
-        trial: TMTTrial
-) -> Dict[str, Any]:
-    speeds = calculate_speeds_between_cursor_positions(trial)
-    accelerations = calculate_accelerations_between_cursor_positions(trial)
-
-    abs_accelerations = np.abs(accelerations)
-    negative_accelerations = list(filter(lambda x: x < 0, accelerations))
-
-    # Handle potential empty lists for negative_accelerations
-    if len(negative_accelerations) > 0:
-        mean_negative_acc = np.mean(negative_accelerations)
-        std_negative_acc = np.std(negative_accelerations)
-        peak_negative_acc = np.min(negative_accelerations)
-    else:
-        mean_negative_acc = np.nan
-        std_negative_acc = np.nan
-        peak_negative_acc = np.nan
-
-    metrics = {
-
-        "mean_speed": np.mean(speeds) if len(speeds) > 0 else np.nan,
-        "std_speed": np.std(speeds) if len(speeds) > 0 else np.nan,
-        "peak_speed": np.max(speeds) if len(speeds) > 0 else np.nan,
-
-        "mean_acceleration": np.mean(accelerations) if len(accelerations) > 0 else np.nan,
-        "std_acceleration": np.std(accelerations) if len(accelerations) > 0 else np.nan,
-        "peak_acceleration": np.max(accelerations) if len(accelerations) > 0 else np.nan,
-
-        "mean_abs_acceleration": np.mean(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-        "std_abs_acceleration": np.std(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-        "peak_abs_acceleration": np.max(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-
-        "mean_negative_acceleration": mean_negative_acc,
-        "std_negative_acceleration": std_negative_acc,
-        "peak_negative_acceleration": peak_negative_acc
-    }
+    metrics["number_of_crosses"] = calculate_crosses_for_trial(trial) if calculate_crosses else np.nan
 
     return metrics
 
 
-def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
-                               correct_targets_minimum: int, consecutive_point,
-                               cut_criteria: CutCriteria) -> pd.DataFrame:
-    rows = []
+def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
+    """
+    Compute and return speed and acceleration statistics from the trial's cursor movements.
 
+    The metrics include:
+      - Mean, standard deviation, and peak speed.
+      - Mean, standard deviation, and peak acceleration.
+      - Mean, standard deviation, and peak of the absolute acceleration.
+      - Mean, standard deviation, and peak (minimum) negative acceleration.
+
+    Args:
+        trial (TMTTrial): The trial containing cursor movement data.
+
+    Returns:
+        Dict[str, Any]: A dictionary with computed speed and acceleration metrics.
+    """
+    speeds = calculate_speeds_between_cursor_positions(trial)
+    accelerations = calculate_accelerations_between_cursor_positions(trial)
+    abs_accelerations = np.abs(accelerations)
+    negative_accelerations = [acc for acc in accelerations if acc < 0]
+
+    mean_speed, std_speed, peak_speed = safe_stats(speeds)
+    mean_acc, std_acc, peak_acc = safe_stats(accelerations)
+    mean_abs_acc, std_abs_acc, peak_abs_acc = safe_stats(abs_accelerations)
+    # For negative accelerations, use np.min to capture the most negative value.
+    mean_neg_acc, std_neg_acc, peak_neg_acc = safe_stats(negative_accelerations, peak_func=np.min)
+
+    return {
+        "mean_speed": mean_speed,
+        "std_speed": std_speed,
+        "peak_speed": peak_speed,
+        "mean_acceleration": mean_acc,
+        "std_acceleration": std_acc,
+        "peak_acceleration": peak_acc,
+        "mean_abs_acceleration": mean_abs_acc,
+        "std_abs_acceleration": std_abs_acc,
+        "peak_abs_acceleration": peak_abs_acc,
+        "mean_negative_acceleration": mean_neg_acc,
+        "std_negative_acceleration": std_neg_acc,
+        "peak_negative_acceleration": peak_neg_acc
+    }
+
+
+def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
+    """
+    Compute mean, standard deviation, and a peak value (using the provided peak function)
+    for a list of numbers. If the list is empty, returns (np.nan, np.nan, np.nan).
+
+    Args:
+        data (Iterable[float]): The data from which to compute statistics.
+        peak_func (Callable): Function to compute the peak value (default: np.max).
+
+    Returns:
+        Tuple[float, float, float]: (mean, std, peak_value)
+    """
+    if len(data) > 0:
+        return np.mean(data), np.std(data), peak_func(data)
+    return np.nan, np.nan, np.nan
+
+
+def calculate_and_save_metrics(
+        experiment: TMTExperiment,
+        save_path: str,
+        correct_targets_minimum: int,
+        consecutive_points: int,
+        cut_criteria: CutCriteria,
+        calculate_crosses: bool
+) -> pd.DataFrame:
+    """
+    Calculate metrics for each subject in the experiment, save the results to a CSV file,
+    and return the aggregated DataFrame.
+
+    This function computes the speed threshold for each subject, then iterates over all subjects
+    to generate trial metric rows using `generate_rows_for_subject`. The resulting rows are aggregated
+    into a pandas DataFrame, saved as a CSV file to the specified path, and returned.
+
+    Args:
+        experiment (TMTExperiment): The experiment containing subjects and their trials.
+        save_path (str): The file path where the CSV should be saved.
+        correct_targets_minimum (int): The minimum number of correct target touches required.
+        consecutive_points (int): The number of consecutive points for segmentation metrics.
+        cut_criteria (CutCriteria): The criteria to use for cutting trials.
+        calculate_crosses (bool): Whether to calculate crosses.
+
+    Returns:
+        pd.DataFrame: DataFrame containing all computed metrics for the experiment.
+    """
+    rows: List[Dict[str, Any]] = []
+
+    # Compute speed thresholds for each subject.
     speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(experiment)
 
-    # Iteramos por cada sujeto en las métricas
     for subject_id, subject in experiment.subjects.items():
         try:
-            subject_rows = generate_rows_for_subject(subject_id, subject, correct_targets_minimum,
-                                                     speed_threshold_by_subject[subject_id], consecutive_point,
-                                                     cut_criteria)
+            threshold = speed_threshold_by_subject.get(subject_id)
+            if threshold is None:
+                logging.warning(f"Speed threshold not found for subject {subject_id}. Skipping subject.")
+                continue
+
+            subject_rows = generate_rows_for_subject(
+                subject_id=subject_id,
+                subject=subject,
+                correct_targets_minimum=correct_targets_minimum,
+                speed_threshold=threshold,
+                consecutive_points=consecutive_points,
+                cut_criteria=cut_criteria,
+                calculate_crosses=calculate_crosses
+            )
             rows.extend(subject_rows)
-        except Exception:
-            logging.exception(f"Error processing subject {subject_id}")
+        except Exception as e:
+            logging.exception(f"Error processing subject {subject_id}: {e}")
             continue
 
-    # Convertimos la lista de filas a un DataFrame
     df = pd.DataFrame(rows)
 
-    df.to_csv(save_path, index=False)
+    try:
+        df.to_csv(save_path, index=False)
+        logging.info(f"Metrics successfully saved to {save_path}.")
+    except Exception as e:
+        logging.exception(f"Error saving CSV to {save_path}: {e}")
+        raise
 
     return df
-
-
-def cut_trial_at_minimum_correct_targets(trial: TMTTrial, correct_targets_minimum: int, radius: float) -> TMTTrial:
-    """
-    Cuts the trial at the minimum number of correct targets.
-    """
-    correct_segments, _ = get_correct_and_incorrect_segments(trial, radius)
-    if len(correct_segments) < correct_targets_minimum:
-        raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
-
-    # Sort correct segments by start time
-    correct_segments.sort(key=lambda x: x[1].time)
-
-    # Get the last correct segment
-    last_correct_segment = correct_segments[correct_targets_minimum - 1]
-
-    # Cut the trial at the end of the last correct segment
-    cursor_info_first_entered_target = last_correct_segment[2]
-
-    cut_trial = cut_at_time(trial, cursor_info_first_entered_target.time, correct_targets_minimum)
-
-    return cut_trial
-
-
-def cut_at_time(trial: TMTTrial, time: float, correct_targets_minimum: int) -> TMTTrial:
-    """
-    Cuts the trial at the given time.
-    """
-    new_cursor_trail = [cursor_info for cursor_info in trial.cursor_trail if cursor_info.time <= time]
-    # rt is the total time the subject took to complete the trial
-    cut_rt = time  # TODO GIAN: ver con gus
-    cut_stimuli = trial.stimuli[:correct_targets_minimum]
-    new_trial = TMTTrial(
-        id=trial.id,
-        stimuli=cut_stimuli,
-        cursor_trail=new_cursor_trail,
-        rt=cut_rt,
-        trial_type=trial.trial_type,
-        order_of_appearance=trial.order_of_appearance,
-        with_custom_start=trial.with_custom_start,
-        start=trial.start
-
-    )
-    return new_trial
