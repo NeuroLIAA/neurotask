@@ -295,18 +295,22 @@ def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
 
     speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(experiment)
 
-    # Iteramos por cada sujeto en las métricas
     for subject_id, subject in experiment.subjects.items():
         try:
-            subject_rows = generate_rows_for_subject(subject_id, subject, correct_targets_minimum,
-                                                     speed_threshold_by_subject[subject_id], consecutive_point,
-                                                     cut_criteria)
+            subject_rows = generate_rows_for_subject(
+                subject_id,
+                subject,
+                correct_targets_minimum,
+                speed_threshold_by_subject[subject_id],
+                consecutive_point,
+                cut_criteria
+            )
+
             rows.extend(subject_rows)
         except Exception:
             logging.exception(f"Error processing subject {subject_id}")
             continue
 
-    # Convertimos la lista de filas a un DataFrame
     df = pd.DataFrame(rows)
 
     df.to_csv(save_path, index=False)
