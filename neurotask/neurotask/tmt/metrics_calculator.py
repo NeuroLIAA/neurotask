@@ -1,5 +1,5 @@
 import logging
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -203,89 +203,112 @@ def compute_trial_metrics(
     Compute all relevant metrics for a single trial in the TMT experiment.
 
     This function computes the following metrics:
-    - Total distance
-    - Reaction time (RT)
-    - Number of correct and wrong target touches
-    - Speed and acceleration metrics
-    - Segmentation metrics
-    - Number of crosses
+      - Total distance traveled by the cursor.
+      - Reaction time (rt) of the trial.
+      - Number of correct and wrong target touches.
+      - Speed and acceleration statistics.
+      - Segmentation metrics.
+      - (Stub) Number of crosses.
 
-    :param subject: The subject object to which the trial belongs.
-    :param trial: The trial object for which to compute metrics.
-    :param correct_targets_touches: The number of correct target touches in the trial.
-    :param wrong_targets_touches: The number of wrong target touches in the trial.
-    :param speed_threshold: The speed threshold for certain calculations.
-    :param consecutive_points: The number of consecutive points to consider in the metrics.
-    :return: A dictionary containing all computed metrics for the trial.
+    Note:
+      The number of crosses is currently a stub (set to 0) and should be replaced with an
+      actual computation if needed.
+
+    Args:
+        subject (TMTSubject): The subject associated with the trial.
+        trial (TMTTrial): The trial for which to compute metrics.
+        correct_targets_touches (int): Number of correct target touches.
+        wrong_targets_touches (int): Number of wrong target touches.
+        speed_threshold (float): Speed threshold for segmentation metrics.
+        consecutive_points (int): Number of consecutive points for segmentation metrics.
+
+    Returns:
+        Dict[str, Any]: A dictionary containing the computed metrics.
     """
-
-    # Compute total distance, rt, correct and wrong targets touches
-    row_metrics = {
+    # Base metrics: distance, reaction time, and target touches.
+    metrics = {
         "total_distance": calculate_total_distance(trial),
         "rt": trial.rt,
         "correct_targets_touches": correct_targets_touches,
         "wrong_targets_touches": wrong_targets_touches
     }
 
-    # Compute speed and acceleration metrics
-    speed_and_acc_metrics = compute_speed_and_acceleration_metrics(trial)
-    row_metrics.update(speed_and_acc_metrics)
+    # Add speed and acceleration metrics.
+    metrics.update(compute_speed_and_acceleration_metrics(trial))
 
-    # Compute segmentation metrics
-    segmentation_metrics = calculate_segmentation_trial_metrics(
+    # Add segmentation metrics.
+    segmentation = calculate_segmentation_trial_metrics(
         trial,
         subject.target_radius,
         speed_threshold,
         consecutive_points
     )
-    row_metrics.update(segmentation_metrics)
+    metrics.update(segmentation)
 
-    # Calculate the number of crosses (This takes too much time)
-    number_of_crosses, _ = (0, None)  # TODO GIAN calculate_crosses(trial)
-    row_metrics["number_of_crosses"] = number_of_crosses
-
-    return row_metrics
-
-
-def compute_speed_and_acceleration_metrics(
-        trial: TMTTrial
-) -> Dict[str, Any]:
-    speeds = calculate_speeds_between_cursor_positions(trial)
-    accelerations = calculate_accelerations_between_cursor_positions(trial)
-
-    abs_accelerations = np.abs(accelerations)
-    negative_accelerations = list(filter(lambda x: x < 0, accelerations))
-
-    # Handle potential empty lists for negative_accelerations
-    if len(negative_accelerations) > 0:
-        mean_negative_acc = np.mean(negative_accelerations)
-        std_negative_acc = np.std(negative_accelerations)
-        peak_negative_acc = np.min(negative_accelerations)
-    else:
-        mean_negative_acc = np.nan
-        std_negative_acc = np.nan
-        peak_negative_acc = np.nan
-
-    metrics = {
-
-        "mean_speed": np.mean(speeds) if len(speeds) > 0 else np.nan,
-        "std_speed": np.std(speeds) if len(speeds) > 0 else np.nan,
-        "peak_speed": np.max(speeds) if len(speeds) > 0 else np.nan,
-
-        "mean_acceleration": np.mean(accelerations) if len(accelerations) > 0 else np.nan,
-        "std_acceleration": np.std(accelerations) if len(accelerations) > 0 else np.nan,
-        "peak_acceleration": np.max(accelerations) if len(accelerations) > 0 else np.nan,
-
-        "mean_abs_acceleration": np.mean(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-        "std_abs_acceleration": np.std(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-        "peak_abs_acceleration": np.max(abs_accelerations) if len(abs_accelerations) > 0 else np.nan,
-
-        "mean_negative_acceleration": mean_negative_acc,
-        "std_negative_acceleration": std_negative_acc,
-        "peak_negative_acceleration": peak_negative_acc
-    }
+    # TODO GIAN: Replace stub with actual computation for the number of crosses.
+    metrics["number_of_crosses"] = 0  # calculate_crosses(trial)
 
     return metrics
+
+
+def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
+    """
+    Compute mean, standard deviation, and a peak value (using the provided peak function)
+    for a list of numbers. If the list is empty, returns (np.nan, np.nan, np.nan).
+
+    Args:
+        data (Iterable[float]): The data from which to compute statistics.
+        peak_func (Callable): Function to compute the peak value (default: np.max).
+
+    Returns:
+        Tuple[float, float, float]: (mean, std, peak_value)
+    """
+    if len(data) > 0:
+        return np.mean(data), np.std(data), peak_func(data)
+    return np.nan, np.nan, np.nan
+
+
+def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
+    """
+    Compute and return speed and acceleration statistics from the trial's cursor movements.
+
+    The metrics include:
+      - Mean, standard deviation, and peak speed.
+      - Mean, standard deviation, and peak acceleration.
+      - Mean, standard deviation, and peak of the absolute acceleration.
+      - Mean, standard deviation, and peak (minimum) negative acceleration.
+
+    Args:
+        trial (TMTTrial): The trial containing cursor movement data.
+
+    Returns:
+        Dict[str, Any]: A dictionary with computed speed and acceleration metrics.
+    """
+    speeds = calculate_speeds_between_cursor_positions(trial)
+    accelerations = calculate_accelerations_between_cursor_positions(trial)
+    abs_accelerations = np.abs(accelerations)
+    negative_accelerations = [acc for acc in accelerations if acc < 0]
+
+    mean_speed, std_speed, peak_speed = safe_stats(speeds)
+    mean_acc, std_acc, peak_acc = safe_stats(accelerations)
+    mean_abs_acc, std_abs_acc, peak_abs_acc = safe_stats(abs_accelerations)
+    # For negative accelerations, use np.min to capture the most negative value.
+    mean_neg_acc, std_neg_acc, peak_neg_acc = safe_stats(negative_accelerations, peak_func=np.min)
+
+    return {
+        "mean_speed": mean_speed,
+        "std_speed": std_speed,
+        "peak_speed": peak_speed,
+        "mean_acceleration": mean_acc,
+        "std_acceleration": std_acc,
+        "peak_acceleration": peak_acc,
+        "mean_abs_acceleration": mean_abs_acc,
+        "std_abs_acceleration": std_abs_acc,
+        "peak_abs_acceleration": peak_abs_acc,
+        "mean_negative_acceleration": mean_neg_acc,
+        "std_negative_acceleration": std_neg_acc,
+        "peak_negative_acceleration": peak_neg_acc
+    }
 
 
 def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
