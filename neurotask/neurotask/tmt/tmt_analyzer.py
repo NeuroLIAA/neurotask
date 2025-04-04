@@ -4,8 +4,8 @@ from typing import Optional
 
 import pandas as pd
 
+from .cut_criteria.cut_criteria import CutCriteria
 from .metrics_calculator import calculate_and_save_metrics
-from ..cut_criteria.cut_criteria import CutCriteria
 
 class TMTAnalyzer:
     """
