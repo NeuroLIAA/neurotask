@@ -7,6 +7,7 @@ import pandas as pd
 from .cut_criteria.cut_criteria import CutCriteria
 from .metrics_calculator import calculate_and_save_metrics
 
+
 class TMTAnalyzer:
     """
     Encapsulates the analysis logic. When you instantiate TMTAnalysis, you provide
@@ -14,6 +15,7 @@ class TMTAnalyzer:
     create the output directory, calculate and save metrics, and store them
     in a pandas DataFrame internally.
     """
+
     def __init__(
             self,
             mapper,
@@ -49,7 +51,7 @@ class TMTAnalyzer:
         self.output_metrics_path: Optional[Path] = None
 
     def run(self, correct_targets_minimum: Optional[int] = None, consecutive_points: Optional[int] = None,
-            cut_criteria: str = None) -> None:
+            cut_criteria: str = None, calculate_crosses=False) -> None:
         """
         Execute the analysis pipeline:
         1. Map the dataset to create an Experiment object.
@@ -79,7 +81,8 @@ class TMTAnalyzer:
             save_path=self.output_metrics_path,
             correct_targets_minimum=ctm,
             consecutive_points=cp,
-            cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None
+            cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None,
+            calculate_crosses=calculate_crosses
         )
 
     def get_metrics_dataframe(self) -> pd.DataFrame:

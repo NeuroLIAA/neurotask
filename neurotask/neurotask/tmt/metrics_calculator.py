@@ -4,6 +4,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import pandas as pd
 
+from .crosses.crosses import calculate_crosses_for_trial
 from .cut_criteria.cut_criteria import CutCriteria
 from .cut_criteria.cut_implementation import cut_trial
 from .invalid_cause import InvalidCause
@@ -15,14 +16,9 @@ from .segmentation.segmentation import calculate_segmentation_trial_metrics, \
     calculate_speed_threshold_for_all_subjects
 
 
-def generate_rows_for_subject(
-        subject_id: str,
-        subject: TMTSubject,
-        correct_targets_minimum: int,
-        speed_threshold: float,
-        consecutive_points: int,
-        cut_criteria: CutCriteria
-) -> List[Dict[str, Any]]:
+def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
+                              speed_threshold: float, consecutive_points: int, cut_criteria: CutCriteria,
+                              calculate_crosses: bool) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
     for valid and invalid trials of a single subject.
@@ -41,6 +37,7 @@ def generate_rows_for_subject(
     :param speed_threshold: The speed threshold for calculations.
     :param consecutive_points: The number of consecutive points to consider.
     :param cut_criteria: The criteria to use for cutting trials; if None, no cutting is performed.
+    :param calculate_crosses: Whether to calculate crosses.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
     rows = []
@@ -90,7 +87,8 @@ def generate_rows_for_subject(
 
             # Compute trial metrics.
             trial_metrics = compute_trial_metrics(
-                subject, processed_trial, correct_touches, wrong_touches, speed_threshold, consecutive_points
+                subject, processed_trial, correct_touches, wrong_touches, speed_threshold, consecutive_points,
+                calculate_crosses
             )
 
             # Combine general trial info with metrics.
@@ -197,7 +195,8 @@ def compute_trial_metrics(
         correct_targets_touches: int,
         wrong_targets_touches: int,
         speed_threshold: float,
-        consecutive_points: int
+        consecutive_points: int,
+        calculate_crosses: bool
 ) -> Dict[str, Any]:
     """
     Compute all relevant metrics for a single trial in the TMT experiment.
@@ -243,10 +242,11 @@ def compute_trial_metrics(
         speed_threshold,
         consecutive_points
     )
+
     metrics.update(segmentation)
 
     # TODO GIAN: Replace stub with actual computation for the number of crosses.
-    metrics["number_of_crosses"] = 0  # calculate_crosses(trial)
+    metrics["number_of_crosses"] = calculate_crosses_for_trial(trial) if calculate_crosses else np.nan
 
     return metrics
 
@@ -316,7 +316,8 @@ def calculate_and_save_metrics(
         save_path: str,
         correct_targets_minimum: int,
         consecutive_points: int,
-        cut_criteria: CutCriteria
+        cut_criteria: CutCriteria,
+        calculate_crosses: bool
 ) -> pd.DataFrame:
     """
     Calculate metrics for each subject in the experiment, save the results to a CSV file,
@@ -332,6 +333,7 @@ def calculate_and_save_metrics(
         correct_targets_minimum (int): The minimum number of correct target touches required.
         consecutive_points (int): The number of consecutive points for segmentation metrics.
         cut_criteria (CutCriteria): The criteria to use for cutting trials.
+        calculate_crosses (bool): Whether to calculate crosses.
 
     Returns:
         pd.DataFrame: DataFrame containing all computed metrics for the experiment.
@@ -354,7 +356,8 @@ def calculate_and_save_metrics(
                 correct_targets_minimum=correct_targets_minimum,
                 speed_threshold=threshold,
                 consecutive_points=consecutive_points,
-                cut_criteria=cut_criteria
+                cut_criteria=cut_criteria,
+                calculate_crosses=calculate_crosses
             )
             rows.extend(subject_rows)
         except Exception as e:
