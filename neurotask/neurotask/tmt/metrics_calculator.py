@@ -245,7 +245,6 @@ def compute_trial_metrics(
 
     metrics.update(segmentation)
 
-    # TODO GIAN: Replace stub with actual computation for the number of crosses.
     metrics["number_of_crosses"] = calculate_crosses_for_trial(trial) if calculate_crosses else np.nan
 
     return metrics
