@@ -62,86 +62,116 @@ def generate_rows_for_subject(
     Generate a list of row dictionaries, each describing metrics and information
     for valid and invalid trials of a single subject.
 
-    Steps:
-    1. For each trial in a subject's testing trials:
-       - Check if the trial is valid.
-       - If valid, attempt to cut the trial at the specified minimum of correct target touches.
-         * If successful, compute and update metrics.
-         * If not, mark the trial as invalid.
-       - If invalid from the start or an error occurs, mark the trial as invalid.
-    2. Return a list of dictionaries, each containing relevant trial data and metrics.
+    For each trial:
+      1. If the trial is invalid from the start, mark it as invalid.
+      2. Otherwise, if cut criteria are provided, attempt to cut the trial.
+         If cutting fails, mark the trial as invalid.
+      3. Compute the number of correct and incorrect target touches.
+         If the correct targets count is below the minimum, mark the trial invalid.
+      4. If all checks pass, compute trial metrics and combine with general trial info.
 
     :param subject_id: A unique identifier for the subject.
     :param subject: The subject object containing personal info and trials.
-    :param correct_targets_minimum: The minimum number of correct target touches required to consider the trial valid.
-    :param speed_threshold: The speed threshold for certain calculations.
-    :param consecutive_points: The number of consecutive points to consider in the metrics.
-    :param cut_criteria: The criteria to use for cutting trials. If None, no cutting is performed.
+    :param correct_targets_minimum: The minimum number of correct target touches required.
+    :param speed_threshold: The speed threshold for calculations.
+    :param consecutive_points: The number of consecutive points to consider.
+    :param cut_criteria: The criteria to use for cutting trials; if None, no cutting is performed.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
     rows = []
 
     for trial in subject.testing_trials:
-        # If the trial is not valid from the start, mark it as invalid.
+        # Check initial validity.
         if not trial.is_valid():
             logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
             rows.append(
-                create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                         invalid_cause=InvalidCause.INVALID_MODEL))
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.INVALID_MODEL
+                )
+            )
             continue
 
         try:
+            processed_trial = trial
 
+            # Apply cut criteria if provided.
             if cut_criteria is not None:
-                try:
-                    processed_trial = cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
-                except Exception:
-                    rows.append(create_invalid_trial_row(subject, subject_id, trial,
-                                                         speed_threshold,
-                                                         invalid_cause=InvalidCause.CUT_CRITERIA_ERROR))
+                processed_trial = _attempt_cut_trial(
+                    trial, correct_targets_minimum, subject, subject_id, cut_criteria, speed_threshold, rows
+                )
+                if processed_trial is None:
                     continue
-            else:
-                processed_trial = trial
 
-            correct_targets_touches, wrong_targets_touches = number_of_correct_and_incorrect_segments(
-                processed_trial,
-                subject.target_radius
+            # Compute target touches.
+            correct_touches, wrong_touches = number_of_correct_and_incorrect_segments(
+                processed_trial, subject.target_radius
             )
 
+            # Check if the trial meets the minimum correct touches.
             if correct_targets_minimum is not None:
-                if correct_targets_touches < correct_targets_minimum:
+                if correct_touches < correct_targets_minimum:
                     logging.warning(
-                        f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+                        f"Trial {trial.id} of subject {subject_id} has {correct_touches} correct target touches, "
                         f"but the minimum required is {correct_targets_minimum}."
                     )
                     rows.append(
-                        create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                                 invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM))
+                        create_invalid_trial_row(
+                            subject, subject_id, trial, speed_threshold,
+                            invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM
+                        )
+                    )
                     continue
 
-            # Compute final metrics on the cutoff trial.
+            # Compute trial metrics.
             trial_metrics = compute_trial_metrics(
-                subject,
-                processed_trial,
-                correct_targets_touches,
-                wrong_targets_touches,
-                speed_threshold,
-                consecutive_points
+                subject, processed_trial, correct_touches, wrong_touches, speed_threshold, consecutive_points
             )
 
-            valid_trial_row = general_trial_info(speed_threshold, subject, subject_id, trial)
-            valid_trial_row.update(trial_metrics)
-
-            rows.append(valid_trial_row)
-
+            # Combine general trial info with metrics.
+            valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
+            valid_row.update(trial_metrics)
+            rows.append(valid_row)
 
         except Exception as e:
-            logging.error(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
-            logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid because of error.")
-            rows.append(create_invalid_trial_row(subject, subject_id, trial, speed_threshold,
-                                                 invalid_cause=InvalidCause.UNKNOWN_ERROR))
+            logging.exception(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
+            rows.append(
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.UNKNOWN_ERROR
+                )
+            )
 
     return rows
+
+
+def _attempt_cut_trial(
+        trial: Any,
+        correct_targets_minimum: int,
+        subject: TMTSubject,
+        subject_id: str,
+        cut_criteria: CutCriteria,
+        speed_threshold: float,
+        rows: List[Dict[str, Any]]
+) -> Optional[Any]:
+    """
+    Attempt to cut a trial using the specified criteria.
+
+    If cutting fails, the function logs a warning and appends an invalid trial row.
+
+    :return: The processed trial if successful, or None if an error occurred.
+    """
+    try:
+        return cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
+    except Exception as e:
+        logging.exception(f"Cut trial error for trial {trial.id} of subject {subject_id}: {e}")
+        rows.append(
+            create_invalid_trial_row(
+                subject, subject_id, trial, speed_threshold,
+                invalid_cause=InvalidCause.CUT_CRITERIA_ERROR
+            )
+        )
+        return None
 
 
 def general_trial_info(speed_threshold, subject, subject_id, trial):
