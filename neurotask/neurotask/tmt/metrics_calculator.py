@@ -251,23 +251,6 @@ def compute_trial_metrics(
     return metrics
 
 
-def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
-    """
-    Compute mean, standard deviation, and a peak value (using the provided peak function)
-    for a list of numbers. If the list is empty, returns (np.nan, np.nan, np.nan).
-
-    Args:
-        data (Iterable[float]): The data from which to compute statistics.
-        peak_func (Callable): Function to compute the peak value (default: np.max).
-
-    Returns:
-        Tuple[float, float, float]: (mean, std, peak_value)
-    """
-    if len(data) > 0:
-        return np.mean(data), np.std(data), peak_func(data)
-    return np.nan, np.nan, np.nan
-
-
 def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
     """
     Compute and return speed and acceleration statistics from the trial's cursor movements.
@@ -309,6 +292,23 @@ def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
         "std_negative_acceleration": std_neg_acc,
         "peak_negative_acceleration": peak_neg_acc
     }
+
+
+def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
+    """
+    Compute mean, standard deviation, and a peak value (using the provided peak function)
+    for a list of numbers. If the list is empty, returns (np.nan, np.nan, np.nan).
+
+    Args:
+        data (Iterable[float]): The data from which to compute statistics.
+        peak_func (Callable): Function to compute the peak value (default: np.max).
+
+    Returns:
+        Tuple[float, float, float]: (mean, std, peak_value)
+    """
+    if len(data) > 0:
+        return np.mean(data), np.std(data), peak_func(data)
+    return np.nan, np.nan, np.nan
 
 
 def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
