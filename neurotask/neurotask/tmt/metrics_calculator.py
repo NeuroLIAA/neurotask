@@ -311,31 +311,63 @@ def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
     return np.nan, np.nan, np.nan
 
 
-def calculate_and_save_metrics(experiment: TMTExperiment, save_path: str,
-                               correct_targets_minimum: int, consecutive_point,
-                               cut_criteria: CutCriteria) -> pd.DataFrame:
-    rows = []
+def calculate_and_save_metrics(
+        experiment: TMTExperiment,
+        save_path: str,
+        correct_targets_minimum: int,
+        consecutive_points: int,
+        cut_criteria: CutCriteria
+) -> pd.DataFrame:
+    """
+    Calculate metrics for each subject in the experiment, save the results to a CSV file,
+    and return the aggregated DataFrame.
 
+    This function computes the speed threshold for each subject, then iterates over all subjects
+    to generate trial metric rows using `generate_rows_for_subject`. The resulting rows are aggregated
+    into a pandas DataFrame, saved as a CSV file to the specified path, and returned.
+
+    Args:
+        experiment (TMTExperiment): The experiment containing subjects and their trials.
+        save_path (str): The file path where the CSV should be saved.
+        correct_targets_minimum (int): The minimum number of correct target touches required.
+        consecutive_points (int): The number of consecutive points for segmentation metrics.
+        cut_criteria (CutCriteria): The criteria to use for cutting trials.
+
+    Returns:
+        pd.DataFrame: DataFrame containing all computed metrics for the experiment.
+    """
+    rows: List[Dict[str, Any]] = []
+
+    # Compute speed thresholds for each subject.
     speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(experiment)
 
     for subject_id, subject in experiment.subjects.items():
         try:
-            subject_rows = generate_rows_for_subject(
-                subject_id,
-                subject,
-                correct_targets_minimum,
-                speed_threshold_by_subject[subject_id],
-                consecutive_point,
-                cut_criteria
-            )
+            threshold = speed_threshold_by_subject.get(subject_id)
+            if threshold is None:
+                logging.warning(f"Speed threshold not found for subject {subject_id}. Skipping subject.")
+                continue
 
+            subject_rows = generate_rows_for_subject(
+                subject_id=subject_id,
+                subject=subject,
+                correct_targets_minimum=correct_targets_minimum,
+                speed_threshold=threshold,
+                consecutive_points=consecutive_points,
+                cut_criteria=cut_criteria
+            )
             rows.extend(subject_rows)
-        except Exception:
-            logging.exception(f"Error processing subject {subject_id}")
+        except Exception as e:
+            logging.exception(f"Error processing subject {subject_id}: {e}")
             continue
 
     df = pd.DataFrame(rows)
 
-    df.to_csv(save_path, index=False)
+    try:
+        df.to_csv(save_path, index=False)
+        logging.info(f"Metrics successfully saved to {save_path}.")
+    except Exception as e:
+        logging.exception(f"Error saving CSV to {save_path}: {e}")
+        raise
 
     return df
