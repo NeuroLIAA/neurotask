@@ -78,7 +78,7 @@ class TMTAnalyzer:
             experiment=self.experiment,
             save_path=self.output_metrics_path,
             correct_targets_minimum=ctm,
-            consecutive_point=cp,
+            consecutive_points=cp,
             cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None
         )
 
