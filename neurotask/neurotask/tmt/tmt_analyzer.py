@@ -1,12 +1,29 @@
 import logging
+from dataclasses import asdict
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List, Dict, Any, Tuple
 
 import pandas as pd
 from neurotask.tmt.mapper.mapper import TMTMapper
+from neurotask.tmt.metrics import get_correct_and_incorrect_segments
+from neurotask.tmt.model.tmt_model import TMTTarget, CursorInfo
 
 from .cut_criteria.cut_criteria import CutCriteria
 from .metrics_calculator import calculate_and_save_metrics
+
+
+def _segment_to_dict(segment: Tuple['TMTTarget', 'CursorInfo', 'CursorInfo']) -> Dict[str, Any]:
+    """
+    Converts a segment tuple into a dictionary.
+    Each segment tuple is expected to have the form:
+    (TMTTarget, start_cursor (CursorInfo), end_cursor (CursorInfo))
+    """
+    target, start_cursor, end_cursor = segment
+    return {
+        "target": asdict(target),
+        "start_cursor": asdict(start_cursor),
+        "end_cursor": asdict(end_cursor)
+    }
 
 
 class TMTAnalyzer:
@@ -95,3 +112,36 @@ class TMTAnalyzer:
             raise RuntimeError("No experiment has been loaded yet. "
                                "Did you forget to call run()?")
         return self.experiment
+
+    def get_segments_data(self) -> Dict[str, List[Dict[str, Any]]]:
+        """
+        Retrieves detailed segment data for each trial in the experiment, grouped by subject.
+
+        For each subject, a key is added to the returned dictionary, with its value being a list of
+        dictionaries. Each dictionary in the list corresponds to a trial and contains:
+          - trial_id: Identifier for the trial.
+          - correct_segments: List of segments where correct targets were touched.
+          - incorrect_segments: List of segments where incorrect targets were touched.
+
+        Returns:
+            Dict[str, List[Dict[str, Any]]]: A dictionary with subject_id as keys and lists of trial
+            segment data as values.
+        """
+        if self.experiment is None:
+            raise RuntimeError("No experiment data available. Did you forget to call run()?")
+
+        segments_data: Dict[str, List[Dict[str, Any]]] = {}
+
+        for subject_id, subject in self.experiment.subjects.items():
+            trial_segments_list = []
+            for trial in subject.testing_trials:
+                correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, subject.target_radius)
+                trial_segments = {
+                    "trial_id": trial.id,
+                    "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],
+                    "incorrect_segments": [_segment_to_dict(seg) for seg in incorrect_segments]
+                }
+                trial_segments_list.append(trial_segments)
+            segments_data[subject_id] = trial_segments_list
+
+        return segments_data
