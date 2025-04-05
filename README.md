@@ -93,3 +93,128 @@ invalid) and contains the following columns:
 
 > **Note:** For invalid trials, many of the metric columns (e.g., distances, speeds, accelerations) will be set to
 > default values or `NaN` to indicate that the trial did not pass validation checks.
+
+
+## Detailed Segment Data
+
+In addition to the aggregated metrics CSV, **neurotask** provides access to detailed segment data for each trial. This data includes information about the segments where correct and incorrect target touches occurred. The detailed segment data is exposed via the `get_segments_data()` method in the `TMTAnalyzer` class. This method returns a dictionary where each key is a `subject_id` and each value is a list of trial segment data for that subject.
+
+For each trial, the segment data includes:
+
+- **trial_id**: Unique identifier for the trial.
+- **correct_segments**: A list of dictionaries, each representing a segment where a correct target was touched.
+- **incorrect_segments**: A list of dictionaries, each representing a segment where an incorrect target was touched.
+
+### Segment Structure
+
+Each segment dictionary (in both `correct_segments` and `incorrect_segments`) includes the following keys:
+
+- **target**: Dictionary with details of the target, including:
+  - **content**: *String* — The content or label of the target.
+  - **position**: *Dictionary* — The position of the target.
+- **start_cursor**: Dictionary with details about the cursor when it first entered the target area, including:
+  - **position**: *Dictionary* — The starting cursor position.
+  - **time**: *Float* — The timestamp when the cursor entered the target area.
+- **end_cursor**: Dictionary with details about the cursor when it exited the target area, including:
+  - **position**: *Dictionary* — The ending cursor position.
+  - **time**: *Float* — The timestamp when the cursor exited the target area.
+
+**Position Dictionary Structure**:  
+For any dictionary that includes a `position` key, the structure is as follows:
+- **x**: *Float* — The x-coordinate.
+- **y**: *Float* — The y-coordinate.
+### Usage Example
+
+Below is an example of how to retrieve and work with the detailed segment data:
+
+```python
+from neurotask.tmt.tmt_analyzer import TMTAnalyzer
+from my_mapper import CustomMapper
+
+# Initialize the TMT Analyzer
+analyzer = TMTAnalyzer(
+    mapper=CustomMapper(),
+    dataset_path="path/to/your/dataset",
+    output_path="path/to/save/results"
+)
+
+# Run the analysis (override parameters as needed)
+analyzer.run(
+    correct_targets_minimum=12,
+    consecutive_points=5,
+    cut_criteria="MINIMUM_TARGETS",
+    calculate_crosses=True
+)
+
+# Retrieve the detailed segments data
+segments_data = analyzer.get_segments_data()
+
+# Example: Access data for a specific subject
+subject_id = "subject_1"
+if subject_id in segments_data:
+    for trial_data in segments_data[subject_id]:
+        print(f"Trial ID: {trial_data['trial_id']}")
+        print("Correct segments:", trial_data["correct_segments"])
+        print("Incorrect segments:", trial_data["incorrect_segments"])
+else:
+    print(f"No segment data found for {subject_id}")
+```
+
+### Example: Detailed Segment Data for a Single Trial
+
+Below is a sample JSON representation of the segment data for one trial of a given subject. In this example, the subject participated in trial `"trial_id_3"`. This example contains only one correct segment and one incorrect segment.
+
+```json
+{
+  "trial_id": "trial_id_3",
+  "correct_segments": [
+    {
+      "target": {
+        "content": "A",
+        "position": {
+          "x": 123.45,
+          "y": 67.89
+        }
+      },
+      "start_cursor": {
+        "position": {
+          "x": 120.00,
+          "y": 65.00
+        },
+        "time": 0.75
+      },
+      "end_cursor": {
+        "position": {
+          "x": 123.45,
+          "y": 67.89
+        },
+        "time": 1.25
+      }
+    }
+  ],
+  "incorrect_segments": [
+    {
+      "target": {
+        "content": "B",
+        "position": {
+          "x": 200.00,
+          "y": 150.00
+        }
+      },
+      "start_cursor": {
+        "position": {
+          "x": 195.00,
+          "y": 145.00
+        },
+        "time": 2.50
+      },
+      "end_cursor": {
+        "position": {
+          "x": 200.00,
+          "y": 150.00
+        },
+        "time": 3.00
+      }
+    }
+  ]
+}
