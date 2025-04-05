@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import pandas as pd
+from neurotask.tmt.mapper.mapper import TMTMapper
 
 from .cut_criteria.cut_criteria import CutCriteria
 from .metrics_calculator import calculate_and_save_metrics
@@ -18,11 +19,9 @@ class TMTAnalyzer:
 
     def __init__(
             self,
-            mapper,
+            mapper: TMTMapper,
             dataset_path: str,
             output_path: str,
-            correct_targets_minimum: int,
-            consecutive_points: int
     ):
         """
         Parameters
@@ -34,16 +33,10 @@ class TMTAnalyzer:
             Path to the dataset to be mapped.
         output_path : str
             Directory path where results (metrics.csv) will be stored.
-        correct_targets_minimum : int
-            Parameter to be passed to the metrics calculation function.
-        consecutive_points : int
-            Parameter to be passed to the metrics calculation function.
         """
         self.mapper = mapper
         self.dataset_path = dataset_path
         self.output_path = output_path
-        self.correct_targets_minimum = correct_targets_minimum
-        self.consecutive_points = consecutive_points
 
         # Internally stored
         self.experiment = None
@@ -70,17 +63,14 @@ class TMTAnalyzer:
         # 3. Calculate and save metrics
         #    (Suponiendo que esta función retorna un DataFrame con las métricas)
 
-        ctm = correct_targets_minimum if correct_targets_minimum is not None else self.correct_targets_minimum
-        cp = consecutive_points if consecutive_points is not None else self.consecutive_points
-
-        if cp is None:
+        if consecutive_points is None:
             raise ValueError("consecutive_points must be provided")
 
         self.metrics_df = calculate_and_save_metrics(
             experiment=self.experiment,
             save_path=self.output_metrics_path,
-            correct_targets_minimum=ctm,
-            consecutive_points=cp,
+            correct_targets_minimum=correct_targets_minimum,
+            consecutive_points=consecutive_points,
             cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None,
             calculate_crosses=calculate_crosses
         )
