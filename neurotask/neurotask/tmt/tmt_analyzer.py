@@ -135,13 +135,38 @@ class TMTAnalyzer:
         for subject_id, subject in self.experiment.subjects.items():
             trial_segments_list = []
             for trial in subject.testing_trials:
-                correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, subject.target_radius)
-                trial_segments = {
-                    "trial_id": trial.id,
-                    "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],
-                    "incorrect_segments": [_segment_to_dict(seg) for seg in incorrect_segments]
-                }
-                trial_segments_list.append(trial_segments)
+                try:
+                    correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, subject.target_radius)
+                    trial_segments = {
+                        "trial_id": trial.id,
+                        "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],
+                        "incorrect_segments": [_segment_to_dict(seg) for seg in incorrect_segments]
+                    }
+                    trial_segments_list.append(trial_segments)
+                except Exception as e:
+                    logging.error(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
+                    continue
+
             segments_data[subject_id] = trial_segments_list
 
         return segments_data
+
+    #function to access by trial id in segments data
+    def get_trial_segments_data(self, subject_id: str, trial_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieves detailed segment data for a specific trial of a specific subject.
+
+        Parameters:
+            subject_id (str): The ID of the subject.
+            trial_id (str): The ID of the trial.
+
+        Returns:
+            Optional[Dict[str, Any]]: A dictionary containing the segment data for the specified trial,
+            or None if the subject or trial is not found.
+        """
+        segments_data = self.get_segments_data()
+        if subject_id in segments_data:
+            for trial in segments_data[subject_id]:
+                if trial["trial_id"] == trial_id:
+                    return trial
+        return None
