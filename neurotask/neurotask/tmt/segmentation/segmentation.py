@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 
-from ..metrics import calculate_distance, calculate_speeds, calculate_speeds_between_cursor_positions
+from ..metrics.metrics import calculate_distance, calculate_speeds, calculate_speeds_between_cursor_positions
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 

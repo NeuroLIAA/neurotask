@@ -2,7 +2,7 @@ import logging
 import math
 from typing import List, Tuple, Optional
 
-from .model.tmt_model import Coordinate, TMTTrial, TMTTarget, CursorInfo
+from ..model.tmt_model import Coordinate, TMTTrial, TMTTarget, CursorInfo
 
 
 def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:

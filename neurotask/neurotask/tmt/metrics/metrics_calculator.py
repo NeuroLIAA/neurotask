@@ -3,17 +3,20 @@ from typing import List, Dict, Any, Optional, Tuple
 
 import numpy as np
 import pandas as pd
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator, \
+    SpeedMetricsCalculator
 
-from .crosses.crosses import calculate_crosses_for_trial
-from .cut_criteria.cut_criteria import CutCriteria
-from .cut_criteria.cut_implementation import cut_trial
-from .invalid_cause import InvalidCause
+from ..crosses.crosses import calculate_crosses_for_trial
+from ..cut_criteria.cut_criteria import CutCriteria
+from ..cut_criteria.cut_implementation import cut_trial
+from ..invalid_cause import InvalidCause
 from .metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
     calculate_speeds_between_cursor_positions, \
     calculate_accelerations_between_cursor_positions
-from .model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
-from .segmentation.segmentation import calculate_segmentation_trial_metrics, \
+from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
+from ..segmentation.segmentation import calculate_segmentation_trial_metrics, \
     calculate_speed_threshold_for_all_subjects
+
 
 
 def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
@@ -86,9 +89,20 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute trial metrics.
+            metric_calculators = [
+                TotalDistanceCalculator(),
+                ReactionTimeCalculator(),
+                SpeedMetricsCalculator(speed_threshold=0.5),
+                # …
+            ]
             trial_metrics = compute_trial_metrics(
-                subject, processed_trial, correct_touches, wrong_touches, speed_threshold, consecutive_points,
-                calculate_crosses
+                processed_trial,
+                metric_calculators,
+                correct_touches=correct_touches,
+                wrong_touches=wrong_touches,
+                speed_threshold=speed_threshold,
+                consecutive_points=consecutive_points,
+                calculate_crosses=calculate_crosses
             )
 
             # Combine general trial info with metrics.

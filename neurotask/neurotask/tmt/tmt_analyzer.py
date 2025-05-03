@@ -5,11 +5,11 @@ from typing import Optional, List, Dict, Any, Tuple
 
 import pandas as pd
 from neurotask.tmt.mapper.mapper import TMTMapper
-from neurotask.tmt.metrics import get_correct_and_incorrect_segments
+from neurotask.tmt.metrics.metrics import get_correct_and_incorrect_segments
+from neurotask.tmt.metrics.metrics_calculator import calculate_and_save_metrics
 from neurotask.tmt.model.tmt_model import TMTTarget, CursorInfo
 
 from .cut_criteria.cut_criteria import CutCriteria
-from .metrics_calculator import calculate_and_save_metrics
 
 
 def _segment_to_dict(segment: Tuple['TMTTarget', 'CursorInfo', 'CursorInfo']) -> Dict[str, Any]:

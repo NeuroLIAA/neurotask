@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from neurotask.tmt.cut_criteria.cut_criteria import CutCriteria
-from neurotask.tmt.metrics import number_of_correct_and_incorrect_segments, get_correct_and_incorrect_segments
+from neurotask.tmt.metrics.metrics import number_of_correct_and_incorrect_segments, get_correct_and_incorrect_segments
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject
 
 
