@@ -1,22 +1,17 @@
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
-from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator, \
-    SpeedMetricsCalculator
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator
+from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 
-from ..crosses.crosses import calculate_crosses_for_trial
+from .metrics import number_of_correct_and_incorrect_segments
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
-from .metrics import calculate_total_distance, number_of_correct_and_incorrect_segments, \
-    calculate_speeds_between_cursor_positions, \
-    calculate_accelerations_between_cursor_positions
 from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
-from ..segmentation.segmentation import calculate_segmentation_trial_metrics, \
-    calculate_speed_threshold_for_all_subjects
-
+from ..segmentation.segmentation import calculate_speed_threshold_for_all_subjects
 
 
 def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
@@ -92,7 +87,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             metric_calculators = [
                 TotalDistanceCalculator(),
                 ReactionTimeCalculator(),
-                SpeedMetricsCalculator(speed_threshold=0.5),
+                SpeedMetricsCalculator(),
                 # …
             ]
             trial_metrics = compute_trial_metrics(
@@ -221,66 +216,6 @@ def compute_trial_metrics(
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial=trial, **params)
     return metrics
-
-
-def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
-    """
-    Compute and return speed and acceleration statistics from the trial's cursor movements.
-
-    The metrics include:
-      - Mean, standard deviation, and peak speed.
-      - Mean, standard deviation, and peak acceleration.
-      - Mean, standard deviation, and peak of the absolute acceleration.
-      - Mean, standard deviation, and peak (minimum) negative acceleration.
-
-    Args:
-        trial (TMTTrial): The trial containing cursor movement data.
-
-    Returns:
-        Dict[str, Any]: A dictionary with computed speed and acceleration metrics.
-    """
-    speeds = calculate_speeds_between_cursor_positions(trial)
-    accelerations = calculate_accelerations_between_cursor_positions(trial)
-    abs_accelerations = np.abs(accelerations)
-    negative_accelerations = [acc for acc in accelerations if acc < 0]
-
-    mean_speed, std_speed, peak_speed = safe_stats(speeds)
-    mean_acc, std_acc, peak_acc = safe_stats(accelerations)
-    mean_abs_acc, std_abs_acc, peak_abs_acc = safe_stats(abs_accelerations)
-    # For negative accelerations, use np.min to capture the most negative value.
-    mean_neg_acc, std_neg_acc, peak_neg_acc = safe_stats(negative_accelerations, peak_func=np.min)
-
-    return {
-        "mean_speed": mean_speed,
-        "std_speed": std_speed,
-        "peak_speed": peak_speed,
-        "mean_acceleration": mean_acc,
-        "std_acceleration": std_acc,
-        "peak_acceleration": peak_acc,
-        "mean_abs_acceleration": mean_abs_acc,
-        "std_abs_acceleration": std_abs_acc,
-        "peak_abs_acceleration": peak_abs_acc,
-        "mean_negative_acceleration": mean_neg_acc,
-        "std_negative_acceleration": std_neg_acc,
-        "peak_negative_acceleration": peak_neg_acc
-    }
-
-
-def safe_stats(data, peak_func=np.max) -> Tuple[float, float, float]:
-    """
-    Compute mean, standard deviation, and a peak value (using the provided peak function)
-    for a list of numbers. If the list is empty, returns (np.nan, np.nan, np.nan).
-
-    Args:
-        data (Iterable[float]): The data from which to compute statistics.
-        peak_func (Callable): Function to compute the peak value (default: np.max).
-
-    Returns:
-        Tuple[float, float, float]: (mean, std, peak_value)
-    """
-    if len(data) > 0:
-        return np.mean(data), np.std(data), peak_func(data)
-    return np.nan, np.nan, np.nan
 
 
 def calculate_and_save_metrics(

@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 
-from neurotask.tmt.metrics.metrics import calculate_total_distance, calculate_total_time
+from neurotask.tmt.metrics.metrics import calculate_total_distance
+from neurotask.tmt.model.tmt_model import TMTTrial
 
 
 class BaseMetricCalculator(ABC):
     @abstractmethod
-    def add_metrics(self, metrics: dict, trial, **params) -> dict:
+    def add_metrics(self, metrics: dict, trial: TMTTrial, **params) -> dict:
         """
         Añade las claves/valores de esta métrica al dict `metrics`.
         `trial` es tu objeto TMTTrial (o las estructuras que uses).
@@ -14,24 +15,26 @@ class BaseMetricCalculator(ABC):
 
 
 class TotalDistanceCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics, trial, **params):
-        metrics['total_distance'] = calculate_total_distance(trial.path)
+    def add_metrics(self, metrics, trial: TMTTrial, **params):
+        metrics['total_distance'] = calculate_total_distance(trial)
         return metrics
 
 
 class ReactionTimeCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics, trial, **params):
-        metrics['rt'] = calculate_total_time(trial.timestamps)
+    def add_metrics(self, metrics, trial: TMTTrial, **params):
+        metrics['rt'] = trial.rt
         return metrics
 
 
-class SpeedMetricsCalculator(BaseMetricCalculator):
-    def __init__(self, speed_threshold):
-        self.speed_threshold = speed_threshold
+class TargetsTouchesCalculator(BaseMetricCalculator):
+    def add_metrics(self, metrics, trial: TMTTrial, **params):
+        if 'correct_targets_touches' not in params:
+            raise ValueError("correct_targets must be provided")
 
-    def add_metrics(self, metrics, trial, **params):
-        speeds = compute_speeds(trial.path, trial.timestamps)
-        metrics['mean_speed'] = speeds.mean()
-        metrics['peak_speed'] = speeds.max()
-        # …
+        if 'wrong_targets_touches' not in params:
+            raise ValueError("wrong_targets must be provided")
+
+        metrics['correct_targets_touches'] = params.get('correct_targets_touches', 0)
+        metrics['wrong_targets_touches'] = params.get('wrong_targets_touches', 0)
+
         return metrics
