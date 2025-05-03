@@ -3,8 +3,10 @@ from typing import List, Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
-from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator, \
+    TargetsTouchesCalculator
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
+from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 
 from .metrics import number_of_correct_and_incorrect_segments
 from ..cut_criteria.cut_criteria import CutCriteria
@@ -84,20 +86,16 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute trial metrics.
-            metric_calculators = [
-                TotalDistanceCalculator(),
-                ReactionTimeCalculator(),
-                SpeedMetricsCalculator(),
-                # …
-            ]
+            metric_calculators = get_metric_calculators()
             trial_metrics = compute_trial_metrics(
                 processed_trial,
                 metric_calculators,
-                correct_touches=correct_touches,
-                wrong_touches=wrong_touches,
+                correct_targets_touches=correct_touches,
+                wrong_targets_touches=wrong_touches,
                 speed_threshold=speed_threshold,
                 consecutive_points=consecutive_points,
-                calculate_crosses=calculate_crosses
+                calculate_crosses=calculate_crosses,
+                subject=subject,
             )
 
             # Combine general trial info with metrics.
@@ -115,6 +113,16 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             )
 
     return rows
+
+
+def get_metric_calculators():
+    return [
+        TotalDistanceCalculator(),
+        ReactionTimeCalculator(),
+        SpeedMetricsCalculator(),
+        SegmentationMetricCalculator(),
+        TargetsTouchesCalculator()
+    ]
 
 
 def _attempt_cut_trial(
@@ -199,9 +207,9 @@ def create_invalid_trial_row(
 
 
 def compute_trial_metrics(
-    trial: TMTTrial,
-    metric_calculators: List[BaseMetricCalculator],
-    **params: Any
+        trial: TMTTrial,
+        metric_calculators: List[BaseMetricCalculator],
+        **params: Any
 ) -> Dict[str, Any]:
     """
     Itera sobre cada calculador de métricas y va acumulando
