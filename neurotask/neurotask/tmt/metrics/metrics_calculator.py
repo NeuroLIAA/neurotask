@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
+from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator, \
     TargetsTouchesCalculator
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
@@ -121,7 +122,8 @@ def get_metric_calculators():
         ReactionTimeCalculator(),
         SpeedMetricsCalculator(),
         SegmentationMetricCalculator(),
-        TargetsTouchesCalculator()
+        TargetsTouchesCalculator(),
+        CrossesMetricCalculator(),
     ]
 
 
