@@ -58,7 +58,6 @@
        trial,
        get_metric_calculators(),
        speed_threshold=0.5,
-       param1=123,            # coincide con tu __init__
        otro_param='valor_opcional'
    )
    ```
