@@ -9,9 +9,6 @@
    from metrics_base import BaseMetricCalculator
 
    class MiNuevaMetricaCalculator(BaseMetricCalculator):
-       def __init__(self, parametro1, parametro2=42):
-           self.param1 = parametro1
-           self.param2 = parametro2
 
        def add_metrics(self, metrics: dict, trial, **params) -> dict:
            """
@@ -20,7 +17,7 @@
            - `params`: otros parámetros comunes (p. ej. `speed_threshold`).
            """
            # Ejemplo de cálculo:
-           valor = alguna_funcion(trial.data, self.param1, params.get('otro_param'))
+           valor = alguna_funcion(trial, params.get('otro_param'))
            metrics['mi_nueva_metrica'] = valor
            return metrics
    ```
@@ -48,7 +45,7 @@
            SegmentationMetricCalculator(),
            TargetsTouchesCalculator(),
            CrossesMetricCalculator(),
-           MiNuevaMetricaCalculator(param1=..., param2=...),  # <- añádela aquí
+           MiNuevaMetricaCalculator(),  # <- añádela aquí
        ]
    ```
 
