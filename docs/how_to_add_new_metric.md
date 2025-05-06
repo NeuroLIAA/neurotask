@@ -58,7 +58,7 @@
        trial,
        get_metric_calculators(),
        speed_threshold=0.5,
-       otro_param='valor_opcional'
+       otro_param='valor_opcional' # Parametro adicional para tu métrica
    )
    ```
 
