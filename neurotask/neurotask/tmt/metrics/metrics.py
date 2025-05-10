@@ -61,69 +61,81 @@ def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, tr
     return None
 
 
-def get_target_touch_segments(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
+def get_target_touch_segments(
+        trial: TMTTrial,
+        target_radius: float
+) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
     """
-    Devuelve una lista de tuplas que contienen el target tocado,
-    el cursor info cuando comenzó a tocar el target y cuando dejó de tocarlo.
+    Devuelve una lista de tuplas para cada segmento continuo de toque sobre un target:
+      (target, [lista de CursorInfo tocando ese target]).
+
+    :param trial: instancia de TMTTrial con stimuli y cursor_trail.
+    :param target_radius: radio para considerar un touch válido.
+    :return: lista de (target, lista de puntos de cursor que tocaron ese target).
     """
+    # Lista de (target|None, CursorInfo) para cada punto del cursor
     trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
 
-    segments = []
-    current_target = None
-    start_cursor_info = None
+    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
+    current_target: Optional[TMTTarget] = None
+    current_points: List[CursorInfo] = []
 
     for touched_target, cursor_info in trail_with_targets:
         if touched_target is not None:
-            if current_target is None:
-                # Si no se está tocando ningún target, comenzamos un nuevo segmento
+            # Si acabamos de empezar a tocar un nuevo target
+            if touched_target != current_target:
+                # Cerramos el segmento anterior
+                if current_target is not None and current_points:
+                    segments.append((current_target, current_points))
+                # Iniciamos nuevo segmento
                 current_target = touched_target
-                start_cursor_info = cursor_info
-            elif touched_target != current_target:
-                # Si se toca un target diferente al actual, cerramos el segmento anterior
-                segments.append((current_target, start_cursor_info, cursor_info))
-                # Iniciamos un nuevo segmento con el nuevo target
-                current_target = touched_target
-                start_cursor_info = cursor_info
-        elif current_target is not None:
-            # Si el cursor dejó de tocar el target actual, cerramos el segmento
-            segments.append((current_target, start_cursor_info, cursor_info))
+                current_points = [cursor_info]
+            else:
+                # Seguimos tocando el mismo target
+                current_points.append(cursor_info)
+        else:
+            # Si dejamos de tocar un target, cerramos el segmento actual
+            if current_target is not None and current_points:
+                segments.append((current_target, current_points))
             current_target = None
-            start_cursor_info = None
+            current_points = []
 
-    # Si al final se sigue tocando un target, cerramos el último segmento
-    if current_target is not None:
-        segments.append((current_target, start_cursor_info, trail_with_targets[-1][1]))
+    # Si al final seguimos tocando un target, cerramos ese último segmento
+    if current_target is not None and current_points:
+        segments.append((current_target, current_points))
 
     return segments
 
 
-def get_correct_and_incorrect_segments(trial: TMTTrial, target_radius: float) -> Tuple[
-    List[Tuple[TMTTarget, CursorInfo, CursorInfo]],
-    List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
+def get_correct_and_incorrect_segments(
+    trial: TMTTrial,
+    target_radius: float
+) -> Tuple[
+    List[Tuple[TMTTarget, List[CursorInfo]]],
+    List[Tuple[TMTTarget, List[CursorInfo]]]
 ]:
     """
-    Devuelve dos listas:
-    1. Los segmentos de targets correctamente tocados (en orden).
-    2. Los segmentos de targets incorrectamente tocados (fuera de orden).
+    Devuelve dos listas basadas en segmentos de touch-points completos:
+    1. correct_segments: segmentos de targets tocados en el orden esperado.
+    2. incorrect_segments: segmentos de targets tocados fuera de orden.
+
+    Cada segmento es una tupla (target, [lista de CursorInfo tocando ese target]).
     """
-    # Obtener todos los segmentos de targets tocados
-    segments = get_target_touch_segments(trial, target_radius)
+    # Obtener segmentos con todos los puntos intermedios
+    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = \
+        get_target_touch_segments(trial, target_radius)
 
-    correct_segments = []
-    incorrect_segments = []
-    expected_target_index = 0
+    correct_segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
+    incorrect_segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
+    expected_idx = 0
 
-    for segment in segments:
-        target, start_cursor_info, end_cursor_info = segment
-
-        # Verificamos si el target es el esperado
-        if expected_target_index < len(trial.stimuli) and target == trial.stimuli[expected_target_index]:
-            # Es el target correcto
-            correct_segments.append(segment)
-            expected_target_index += 1  # Pasamos al siguiente target esperado
+    for target, points in segments:
+        # Comprobamos si coincide con el siguiente target esperado
+        if expected_idx < len(trial.stimuli) and target == trial.stimuli[expected_idx]:
+            correct_segments.append((target, points))
+            expected_idx += 1
         else:
-            # Target tocado incorrectamente
-            incorrect_segments.append(segment)
+            incorrect_segments.append((target, points))
 
     return correct_segments, incorrect_segments
 

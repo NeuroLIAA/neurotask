@@ -94,13 +94,13 @@ def cut_trial_at_minimum_correct_targets(
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
     # Sort segments by the time the segment started (assumed to be the second element)
-    correct_segments.sort(key=lambda segment: segment[1].time)
+    correct_segments.sort(key=lambda segment: segment[1][0].time)
 
     # Identify the cutoff segment—the one at which the required count is reached.
     cutoff_segment = correct_segments[correct_targets_minimum - 1]
-    cursor_info = cutoff_segment[2]
+    last_cursor_info = cutoff_segment[1][-1]
 
-    return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
+    return cut_at_time(trial, last_cursor_info.time, correct_targets_minimum)
 
 
 def cut_at_time(

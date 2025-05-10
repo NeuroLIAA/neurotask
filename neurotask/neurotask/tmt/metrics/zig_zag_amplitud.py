@@ -31,11 +31,15 @@ class ZigZagAmplitude(BaseMetricCalculator):
         time_differences = []
         # Recorremos pares [número, letra]
         for i in range(0, len(correct_segments) - 1, 2):
-            number_target, number_start_cursor_info, _ = correct_segments[i]
-            letter_target, letter_start_cursor_info, _ = correct_segments[i + 1]
+            number_target, number_segment = correct_segments[i]
+            letter_target, letter_segment = correct_segments[i + 1]
 
             assert number_target.content.isdigit(), f"Expected number, got {number_target.content}"
             assert letter_target.content.isalpha(), f"Expected letter, got {letter_target.content}"
+
+            # Obtenemos el primer CursorInfo de cada segmento
+            number_start_cursor_info = number_segment[0]
+            letter_start_cursor_info = letter_segment[0]
 
             # time_difference = tiempo de llegada a letra - tiempo de llegada a número
             time_difference = letter_start_cursor_info.time - number_start_cursor_info.time
