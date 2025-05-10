@@ -7,7 +7,7 @@ from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalcula
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator, TotalDistanceCalculator, ReactionTimeCalculator, \
     TargetsTouchesCalculator
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
-from neurotask.tmt.metrics.path_metrics import ZigZagAmplitude
+from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 
 from .metrics import number_of_correct_and_incorrect_segments
