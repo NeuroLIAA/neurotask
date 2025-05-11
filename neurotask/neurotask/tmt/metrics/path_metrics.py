@@ -3,7 +3,7 @@ from typing import Dict, Any
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.metrics import get_correct_and_incorrect_segments
+from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_segments
 from neurotask.tmt.model.tmt_model import TMTTrial, TrialType
 
 

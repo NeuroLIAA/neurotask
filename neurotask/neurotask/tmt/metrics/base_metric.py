@@ -24,17 +24,3 @@ class ReactionTimeCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics, trial: TMTTrial, **params):
         metrics['rt'] = trial.rt
         return metrics
-
-
-class TargetsTouchesCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics, trial: TMTTrial, **params):
-        if 'correct_targets_touches' not in params:
-            raise ValueError("correct_targets must be provided")
-
-        if 'wrong_targets_touches' not in params:
-            raise ValueError("wrong_targets must be provided")
-
-        metrics['correct_targets_touches'] = params.get('correct_targets_touches', 0)
-        metrics['wrong_targets_touches'] = params.get('wrong_targets_touches', 0)
-
-        return metrics
