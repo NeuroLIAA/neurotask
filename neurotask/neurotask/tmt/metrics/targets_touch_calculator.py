@@ -1,6 +1,7 @@
 from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
+from .metrics import calculate_distance
 from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo
 
 
