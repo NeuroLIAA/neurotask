@@ -5,7 +5,7 @@ from typing import Optional, List, Dict, Any, Tuple
 
 import pandas as pd
 from neurotask.tmt.mapper.mapper import TMTMapper
-from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_segments
+from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.metrics.metrics_calculator import calculate_and_save_metrics
 from neurotask.tmt.model.tmt_model import TMTTarget, CursorInfo
 
@@ -136,7 +136,7 @@ class TMTAnalyzer:
             trial_segments_list = []
             for trial in subject.testing_trials:
                 try:
-                    correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, subject.target_radius)
+                    correct_segments, incorrect_segments = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
                     trial_segments = {
                         "trial_id": trial.id,
                         "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],

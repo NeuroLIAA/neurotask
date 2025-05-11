@@ -57,7 +57,7 @@ def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, tr
     return None
 
 
-def get_target_touch_segments(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
+def get_target_touch_intervals(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
     """
     Devuelve una lista de tuplas que contienen el target tocado,
     el cursor info cuando comenzó a tocar el target y cuando dejó de tocarlo.
@@ -93,7 +93,7 @@ def get_target_touch_segments(trial: TMTTrial, target_radius: float) -> List[Tup
     return segments
 
 
-def get_correct_and_incorrect_segments(trial: TMTTrial, target_radius: float) -> Tuple[
+def get_correct_and_incorrect_target_touch_intervals(trial: TMTTrial, target_radius: float) -> Tuple[
     List[Tuple[TMTTarget, CursorInfo, CursorInfo]],
     List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
 ]:
@@ -103,7 +103,7 @@ def get_correct_and_incorrect_segments(trial: TMTTrial, target_radius: float) ->
     2. Los segmentos de targets incorrectamente tocados (fuera de orden).
     """
     # Obtener todos los segmentos de targets tocados
-    segments = get_target_touch_segments(trial, target_radius)
+    segments = get_target_touch_intervals(trial, target_radius)
 
     correct_segments = []
     incorrect_segments = []
@@ -128,5 +128,5 @@ def number_of_correct_and_incorrect_segments(trial: TMTTrial, target_radius: flo
     """
     Devuelve el número de segmentos de targets correctamente tocados e incorrectamente tocados.
     """
-    correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, target_radius)
+    correct_segments, incorrect_segments = get_correct_and_incorrect_target_touch_intervals(trial, target_radius)
     return len(correct_segments), len(incorrect_segments)
