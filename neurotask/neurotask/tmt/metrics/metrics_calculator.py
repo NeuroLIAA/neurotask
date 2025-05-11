@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
-from neurotask.tmt.metrics.path_metrics import ZigZagAmplitude
+from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 from .base_metric import ReactionTimeCalculator, TotalDistanceCalculator, BaseMetricCalculator
 
