@@ -44,24 +44,49 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
     return trail_with_targets
 
 
-def get_all_trails_between_targets(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
-    all_trails = []
+
+def get_all_trails_between_targets(
+    trial: TMTTrial,
+    target_radius: float
+) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
+    """
+    Devuelve, para cada target en `trial.stimuli`, la lista de CursorInfo
+    desde el inicio (o desde el toque del target anterior) hasta el momento
+    en que se toca ese target.
+
+    Cada tupla es (target, segmento_de_cursor), donde:
+      - `target` es el TMTTarget esperado.
+      - `segmento_de_cursor` es la lista de CursorInfo desde el corte anterior
+        hasta el primer toque de ese target.
+
+    Si algún target esperado no llega a tocarse, se detiene la generación de
+    segmentos.
+
+    :param trial:  instancia de TMTTrial
+    :param target_radius:  radio para detección de toques por `touched_targets_for_every_cursor_point`
+    :return: lista de (TMTTarget, List[CursorInfo]) en orden de aparición
+    """
+    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
+    # Secuencia (target o None, cursor_info) para cada punto de cursor
     trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
 
-    current_trail: List[CursorInfo] = []
-    expected_target_index = 1
+    # Iterador único sobre la secuencia de toques/puntos
+    trail_iter = iter(trail_with_targets)
 
-    for touched_target, cursor_info in trail_with_targets:
-        current_trail.append(cursor_info)
-        if expected_target_index < len(trial.stimuli) and touched_target == trial.stimuli[expected_target_index]:
-            # Si el target tocado es el esperado, lo añadimos a la lista de trails
-            all_trails.append((touched_target, current_trail))
-            expected_target_index += 1
-            current_trail = []  # Reiniciamos el trail para el siguiente target
+    # Para cada target esperado, vamos construyendo su segmento
+    for expected in trial.stimuli:
+        current_segment: List[CursorInfo] = []
+        for touched, cursor_info in trail_iter:
+            current_segment.append(cursor_info)
+            if touched == expected:
+                # Cerramos el segmento al primer toque válido
+                segments.append((expected, current_segment.copy()))
+                break
+        else:
+            # No encontramos el target esperado en lo que queda de trail
+            break
 
-
-    return all_trails
-
+    return segments
 
 def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> Optional[TMTTarget]:
     """
