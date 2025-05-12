@@ -17,14 +17,18 @@ def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:
     return math.hypot(dx, dy)
 
 
-def calculate_total_distance(trial):
+def calculate_total_distance(trial: TMTTrial):
     """
     Calculate the total distance of the cursor trail in a TMT trial.
 
     :param trial: TMTTrial object containing the cursor trail.
     :return: Total distance traveled by the cursor.
     """
-    return calculate_total_distance(trial.get_cursor_trail_from_start())
+    cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
+    return sum(
+        calculate_distance(cursor_trail_from_first_click[i].position, cursor_trail_from_first_click[i + 1].position)
+        for i in range(len(cursor_trail_from_first_click) - 1)
+    )
 
 def calculate_total_distance_from_segment(segment_trial: List[CursorInfo]) -> float:
     return sum(
