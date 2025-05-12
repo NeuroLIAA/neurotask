@@ -20,17 +20,15 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
             get_all_trails_between_targets(trial, subject.target_radius))
 
-        ideal_distances = []
+        differences = []
         for trail in trails_between_targets:
             target, cursor_trail = trail
             if target is None:
                 continue
+            difference = self.calculate_distance_difference_from_ideal(cursor_trail)
+            differences.append(difference)
 
-            # Calculate the ideal distance
-            ideal_distance = self.calculate_distance_difference_from_ideal(cursor_trail)
-            ideal_distances.append(ideal_distance)
-
-        metrics['distance_difference_from_ideal'] = np.mean(ideal_distances)
+        metrics['distance_difference_from_ideal'] = float(np.mean(differences))
 
         return metrics
 
