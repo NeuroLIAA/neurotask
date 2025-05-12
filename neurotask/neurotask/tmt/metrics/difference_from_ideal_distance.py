@@ -55,7 +55,7 @@ def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
     return ideal_segment
 
 
-class IdealDistanceDifference(BaseMetricCalculator):
+class DifferenceFromIdealDistance(BaseMetricCalculator):
 
     def add_metrics(
             self,
@@ -78,7 +78,7 @@ class IdealDistanceDifference(BaseMetricCalculator):
             ideal_distance = self.calculate_distance_difference_from_ideal(cursor_trail)
             ideal_distances.append(ideal_distance)
 
-        metrics['ideal_distance_difference'] = np.mean(ideal_distances)
+        metrics['distance_difference_from_ideal'] = np.mean(ideal_distances)
 
         return metrics
 
