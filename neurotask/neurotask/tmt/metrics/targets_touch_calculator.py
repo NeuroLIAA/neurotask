@@ -19,7 +19,6 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
         return metrics
 
 
-
 def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float) -> List[
     Tuple[Optional[TMTTarget], CursorInfo]]:
     """
@@ -43,6 +42,25 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
         trail_with_targets.append((last_touched_target, cursor_info))
 
     return trail_with_targets
+
+
+def get_all_trails_between_targets(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
+    all_trails = []
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    current_trail: List[CursorInfo] = []
+    expected_target_index = 1
+
+    for touched_target, cursor_info in trail_with_targets:
+        current_trail.append(cursor_info)
+        if expected_target_index < len(trial.stimuli) and touched_target == trial.stimuli[expected_target_index]:
+            # Si el target tocado es el esperado, lo añadimos a la lista de trails
+            all_trails.append((touched_target, current_trail))
+            expected_target_index += 1
+            current_trail = []  # Reiniciamos el trail para el siguiente target
+
+
+    return all_trails
 
 
 def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> Optional[TMTTarget]:
