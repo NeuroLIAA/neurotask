@@ -1,7 +1,9 @@
 import math
+from typing import List
 
 from .base_metric import BaseMetricCalculator
-from ..model.tmt_model import Coordinate, TMTTrial
+from ..model.tmt_model import Coordinate, TMTTrial, CursorInfo
+
 
 class TotalDistanceCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics, trial: TMTTrial, **params):
@@ -16,8 +18,16 @@ def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:
 
 
 def calculate_total_distance(trial):
-    cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
+    """
+    Calculate the total distance of the cursor trail in a TMT trial.
+
+    :param trial: TMTTrial object containing the cursor trail.
+    :return: Total distance traveled by the cursor.
+    """
+    return calculate_total_distance(trial.get_cursor_trail_from_start())
+
+def calculate_total_distance_from_segment(segment_trial: List[CursorInfo]) -> float:
     return sum(
-        calculate_distance(cursor_trail_from_first_click[i].position, cursor_trail_from_first_click[i + 1].position)
-        for i in range(len(cursor_trail_from_first_click) - 1)
+        calculate_distance(segment_trial[i].position, segment_trial[i + 1].position)
+        for i in range(len(segment_trial) - 1)
     )
