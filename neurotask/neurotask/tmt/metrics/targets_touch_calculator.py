@@ -74,7 +74,7 @@ def get_all_trails_between_targets(
     trail_iter = iter(trail_with_targets)
 
     # Para cada target esperado, vamos construyendo su segmento
-    for expected in trial.stimuli:
+    for expected in trial.stimuli[1:]:
         current_segment: List[CursorInfo] = []
         for touched, cursor_info in trail_iter:
             current_segment.append(cursor_info)
