@@ -1,27 +1,22 @@
-import logging
-import math
 from typing import List, Tuple, Optional
 
-from ..model.tmt_model import Coordinate, TMTTrial, TMTTarget, CursorInfo
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
+from .distance_calculation import calculate_distance
+from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo
 
 
-def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:
-    dx = pos1.x - pos2.x
-    dy = pos1.y - pos2.y
-    return math.hypot(dx, dy)
+class TargetsTouchesCalculator(BaseMetricCalculator):
+    def add_metrics(self, metrics, trial: TMTTrial, **params):
+        if 'correct_targets_touches' not in params:
+            raise ValueError("correct_targets must be provided")
 
+        if 'wrong_targets_touches' not in params:
+            raise ValueError("wrong_targets must be provided")
 
-def calculate_total_time(trial: TMTTrial) -> float:
-    cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
-    return cursor_trail_from_first_click[-1].time - cursor_trail_from_first_click[0].time
+        metrics['correct_targets_touches'] = params.get('correct_targets_touches', 0)
+        metrics['wrong_targets_touches'] = params.get('wrong_targets_touches', 0)
 
-
-def calculate_total_distance(trial):
-    cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
-    return sum(
-        calculate_distance(cursor_trail_from_first_click[i].position, cursor_trail_from_first_click[i + 1].position)
-        for i in range(len(cursor_trail_from_first_click) - 1)
-    )
+        return metrics
 
 
 def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float) -> List[
@@ -49,6 +44,50 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
     return trail_with_targets
 
 
+
+def get_all_trails_between_targets(
+    trial: TMTTrial,
+    target_radius: float
+) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
+    """
+    Devuelve, para cada target en `trial.stimuli`, la lista de CursorInfo
+    desde el inicio (o desde el toque del target anterior) hasta el momento
+    en que se toca ese target.
+
+    Cada tupla es (target, segmento_de_cursor), donde:
+      - `target` es el TMTTarget esperado.
+      - `segmento_de_cursor` es la lista de CursorInfo desde el corte anterior
+        hasta el primer toque de ese target.
+
+    Si algún target esperado no llega a tocarse, se detiene la generación de
+    segmentos.
+
+    :param trial:  instancia de TMTTrial
+    :param target_radius:  radio para detección de toques por `touched_targets_for_every_cursor_point`
+    :return: lista de (TMTTarget, List[CursorInfo]) en orden de aparición
+    """
+    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
+    # Secuencia (target o None, cursor_info) para cada punto de cursor
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # Iterador único sobre la secuencia de toques/puntos
+    trail_iter = iter(trail_with_targets)
+
+    # Para cada target esperado, vamos construyendo su segmento
+    for expected in trial.stimuli[1:]:
+        current_segment: List[CursorInfo] = []
+        for touched, cursor_info in trail_iter:
+            current_segment.append(cursor_info)
+            if touched == expected:
+                # Cerramos el segmento al primer toque válido
+                segments.append((expected, current_segment.copy()))
+                break
+        else:
+            # No encontramos el target esperado en lo que queda de trail
+            break
+
+    return segments
+
 def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> Optional[TMTTarget]:
     """
     Returns the target that the cursor is touching, if any. Otherwise, returns None.
@@ -61,7 +100,7 @@ def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, tr
     return None
 
 
-def get_target_touch_segments(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
+def get_target_touch_intervals(trial: TMTTrial, target_radius: float) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
     """
     Devuelve una lista de tuplas que contienen el target tocado,
     el cursor info cuando comenzó a tocar el target y cuando dejó de tocarlo.
@@ -97,7 +136,7 @@ def get_target_touch_segments(trial: TMTTrial, target_radius: float) -> List[Tup
     return segments
 
 
-def get_correct_and_incorrect_segments(trial: TMTTrial, target_radius: float) -> Tuple[
+def get_correct_and_incorrect_target_touch_intervals(trial: TMTTrial, target_radius: float) -> Tuple[
     List[Tuple[TMTTarget, CursorInfo, CursorInfo]],
     List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
 ]:
@@ -107,7 +146,7 @@ def get_correct_and_incorrect_segments(trial: TMTTrial, target_radius: float) ->
     2. Los segmentos de targets incorrectamente tocados (fuera de orden).
     """
     # Obtener todos los segmentos de targets tocados
-    segments = get_target_touch_segments(trial, target_radius)
+    segments = get_target_touch_intervals(trial, target_radius)
 
     correct_segments = []
     incorrect_segments = []
@@ -132,5 +171,5 @@ def number_of_correct_and_incorrect_segments(trial: TMTTrial, target_radius: flo
     """
     Devuelve el número de segmentos de targets correctamente tocados e incorrectamente tocados.
     """
-    correct_segments, incorrect_segments = get_correct_and_incorrect_segments(trial, target_radius)
+    correct_segments, incorrect_segments = get_correct_and_incorrect_target_touch_intervals(trial, target_radius)
     return len(correct_segments), len(incorrect_segments)

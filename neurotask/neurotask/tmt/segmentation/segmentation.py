@@ -5,7 +5,7 @@ from typing import List, Tuple, Dict, Optional
 import numpy as np
 from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds
 
-from ..metrics.metrics import calculate_distance
+from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 

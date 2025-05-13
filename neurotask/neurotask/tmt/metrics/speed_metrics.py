@@ -3,7 +3,7 @@ from typing import Dict, Any, Tuple, List
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.metrics import calculate_distance
+from neurotask.tmt.metrics.distance_calculation import calculate_distance
 from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo
 
 
