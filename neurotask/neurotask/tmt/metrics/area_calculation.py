@@ -69,7 +69,18 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
             get_all_trails_between_targets(trial, subject.target_radius))
 
-        #WORK IN PROGRESS
+        areas = []
+        for trail in trails_between_targets:
+            target, cursor_trail = trail
+            if target is None:
+                continue
+            area = area_between_real_and_ideal(cursor_trail)
+            areas.append(area)
+
+        metrics['area_difference_from_ideal'] = float(np.mean(areas))
+
+        return metrics
+
 
 
 
