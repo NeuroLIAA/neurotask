@@ -55,7 +55,7 @@ def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
     return ideal_segment
 
 
-class DifferenceFromIdealDistance(BaseMetricCalculator):
+class DifferenceFromIdealArea(BaseMetricCalculator):
 
     def add_metrics(
             self,
