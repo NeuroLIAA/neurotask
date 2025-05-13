@@ -67,3 +67,5 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
 
         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
             get_all_trails_between_targets(trial, subject.target_radius))
+
+        #WORK IN PROGRESS
