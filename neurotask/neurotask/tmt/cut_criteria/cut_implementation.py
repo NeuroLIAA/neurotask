@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from neurotask.tmt.cut_criteria.cut_criteria import CutCriteria
-from neurotask.tmt.metrics.targets_touch_calculator import number_of_correct_and_incorrect_segments, get_correct_and_incorrect_target_touch_intervals
+from neurotask.tmt.metrics.targets_touch_calculator import number_of_correct_and_incorrect_targets_touched, get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject
 
 
@@ -58,7 +58,7 @@ def cut_trial_at_minimum_targets(
     Raises:
         ValueError: If the trial does not meet the required number of correct target touches.
     """
-    correct_targets_touches, _ = number_of_correct_and_incorrect_segments(trial, subject.target_radius)
+    correct_targets_touches, _ = number_of_correct_and_incorrect_targets_touched(trial, subject.target_radius)
 
     if correct_targets_touches < correct_targets_minimum:
         logging.warning(

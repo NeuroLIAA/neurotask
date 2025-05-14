@@ -1,23 +1,14 @@
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TrialType, TMTSubject, TMTTarget, CursorInfo
 
 
 class ZigZagAmplitude(BaseMetricCalculator):
 
-    def add_metrics(
-            self,
-            metrics: dict,
-            trial: TMTTrial,
-            subject: TMTSubject,
-            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-            calculate_crosses: bool,
-            speed_threshold,
-            consecutive_points,
-            correct_targets_touches,
-            wrong_targets_touches
-    ) -> dict:
+    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
+                    correct_intervals, wrong_intervals) -> dict:
 
         # Solo aplicable a Parte B
         if trial.trial_type != TrialType.PART_B:
@@ -26,14 +17,11 @@ class ZigZagAmplitude(BaseMetricCalculator):
 
         target_radius = subject.target_radius
 
-        # Segmentos correctos en orden (números y letras alternados)
-        correct_segments, _ = get_correct_and_incorrect_target_touch_intervals(trial, target_radius)
-
         time_differences = []
         # Recorremos pares [número, letra]
-        for i in range(0, len(correct_segments) - 1, 2):
-            number_target, number_start_cursor_info, _ = correct_segments[i]
-            letter_target, letter_start_cursor_info, _ = correct_segments[i + 1]
+        for i in range(0, len(correct_intervals) - 1, 2):
+            number_target, number_start_cursor_info, _ = correct_intervals[i]
+            letter_target, letter_start_cursor_info, _ = correct_intervals[i + 1]
 
             assert number_target.content.isdigit(), f"Expected number, got {number_target.content}"
             assert letter_target.content.isalpha(), f"Expected letter, got {letter_target.content}"

@@ -1,36 +1,23 @@
-from typing import Dict, Any, List
+from typing import List
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
 class TargetTime(BaseMetricCalculator):
-    def add_metrics(
-            self,
-            metrics: dict,
-            trial: TMTTrial,
-            subject: TMTSubject,
-            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-            calculate_crosses: bool,
-            speed_threshold,
-            consecutive_points,
-            correct_targets_touches,
-            wrong_targets_touches
-    ) -> dict:
+    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
+                    correct_intervals, wrong_intervals) -> dict:
 
         if subject is None:
             raise ValueError("Subject must be provided")
-        target_radius = subject.target_radius
-
-        # Segmentos correctos en orden (números y letras alternados)
-        correct_segments, _ = get_correct_and_incorrect_target_touch_intervals(trial, target_radius)
 
         # Calculate time inside the targets
         # 3. Para cada segmento, calcular el tiempo dentro del target
         intra_times = []
-        for target, start_ci, end_ci in correct_segments:
+        for target, start_ci, end_ci in correct_intervals:
             # end_ci.time es el instante en que deja de tocar
             # start_ci.time es el instante en que comienza a tocar
             dwell_time = end_ci.time - start_ci.time
@@ -41,7 +28,7 @@ class TargetTime(BaseMetricCalculator):
 
         total_dwell = float(np.sum(intra_times))
 
-        inter_time = self.calculate_inter_time(correct_segments, metrics, total_dwell, trial)
+        inter_time = self.calculate_inter_time(correct_intervals, metrics, total_dwell, trial)
         metrics['inter_target_time'] = inter_time
 
         return metrics

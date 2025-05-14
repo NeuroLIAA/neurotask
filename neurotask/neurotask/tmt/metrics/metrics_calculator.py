@@ -13,8 +13,9 @@ from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCal
 
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touch_calculator import TargetsTouchesCalculator, get_all_trails_between_targets
-from .targets_touch_calculator import number_of_correct_and_incorrect_segments
+from .targets_touch_calculator import TargetsTouchesCalculator, get_all_trails_between_targets, \
+    get_correct_and_incorrect_target_touch_intervals
+from .targets_touch_calculator import number_of_correct_and_incorrect_targets_touched
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
@@ -72,7 +73,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute target touches.
-            correct_touches, wrong_touches = number_of_correct_and_incorrect_segments(
+            correct_touches, wrong_touches = number_of_correct_and_incorrect_targets_touched(
                 processed_trial, subject.target_radius
             )
 
@@ -235,11 +236,12 @@ def compute_trial_metrics(
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
         get_all_trails_between_targets(trial, subject.target_radius)
     )
+    correct_intervals, wrong_intervals = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
                                          speed_threshold, consecutive_points, correct_targets_touches,
-                                         wrong_targets_touches)
+                                         wrong_targets_touches, correct_intervals, wrong_intervals)
     return metrics
 
 
