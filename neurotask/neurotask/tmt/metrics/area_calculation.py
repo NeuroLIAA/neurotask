@@ -1,17 +1,20 @@
-from typing import Dict, Any, List
+from typing import List
 
 import numpy as np
-from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.distance_calculation import calculate_distance, calculate_total_distance_from_segment
 from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
-from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTTarget, Coordinate
-from scipy.interpolate import interp1d
-
+from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget
 
 
 def area_between_real_and_ideal(
-    segment: List[CursorInfo]
+        segment: List[CursorInfo]
 ) -> float:
+    # 1) Extraer coordenadas (x, y) de los puntos reales
+    point_coords = np.array([[cursor_info.position.x, cursor_info.position.y] for cursor_info in segment], dtype=float)
+
+    return area_between_real_and_ideal_points(point_coords)
+
+
+def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
     """
     Integra la distancia perpendicular absoluta entre la trayectoria real
     y la línea recta ideal que une el primer y último punto del segmento.
@@ -19,22 +22,16 @@ def area_between_real_and_ideal(
     :param segment: lista de CursorInfo reales
     :return: área bajo la curva de desviación, >= 0
     """
-    num_points = len(segment)
+    num_points = len(point_coords)
     if num_points < 2:
         return 0.0
 
-    # 1) Extraer coordenadas (x, y) de los puntos reales
-    point_coords = np.array([
-        [cursor_info.position.x, cursor_info.position.y]
-        for cursor_info in segment
-    ], dtype=float)
-
     # 2) Definir el vector ideal desde el primer al último punto
     start_point = point_coords[0]
-    end_point   = point_coords[-1]
+    end_point = point_coords[-1]
     ideal_vector = end_point - start_point
     ideal_length_sq = np.dot(ideal_vector, ideal_vector)
-    ideal_length    = np.sqrt(ideal_length_sq)
+    ideal_length = np.sqrt(ideal_length_sq)
 
     # 3) Proyectar cada punto real sobre la línea ideal
     #    a) desplazamientos desde el inicio
@@ -47,6 +44,8 @@ def area_between_real_and_ideal(
     # 4) Calcular distancia perpendicular de cada punto real a la ideal
     perpendicular_distances = np.linalg.norm(point_coords - projection_points, axis=1)
 
+    #check if there
+
     # 5) Coordenadas escalarizadas a lo largo de la línea ideal
     #    (distancia desde el inicio a cada proyección)
     line_positions = projection_factors * ideal_length
@@ -55,6 +54,7 @@ def area_between_real_and_ideal(
     area = np.trapz(perpendicular_distances, line_positions)
 
     return float(area)
+
 
 class DifferenceFromIdealArea(BaseMetricCalculator):
 
@@ -81,10 +81,7 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
 
         return metrics
 
-
-
-
-#def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
+# def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
 #     """
 #     Dado un segmento real de CursorInfo, devuelve un segmento 'ideal'
 #     de la misma longitud, interpolando linealmente posición (x, y)
