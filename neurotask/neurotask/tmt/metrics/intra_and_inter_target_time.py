@@ -29,26 +29,27 @@ class TargetTime(BaseMetricCalculator):
 
         total_dwell = float(np.sum(intra_times))
 
-        inter_time = self.calculate_inter_time(correct_intervals, metrics, total_dwell, trial)
+        inter_time = self.calculate_inter_time(correct_intervals, total_dwell, trial)
         metrics['inter_target_time'] = inter_time
 
         return metrics
 
-    def calculate_inter_time(self, correct_segments, metrics, total_dwell, trial):
+    def calculate_inter_time(self, correct_segments, total_dwell, trial):
 
-        total_time = trial.get_cursor_trail_from_start()[-1].time - trial.start.time
+        finish_time = trial.get_cursor_trail_from_start()[-1].time
+        total_time = finish_time - trial.start.time
 
         inter_time = total_time - total_dwell
 
         inter_time = float(inter_time)
 
-        self.validate_inter_time(correct_segments, inter_time)
+        self.validate_inter_time(correct_segments, inter_time, finish_time)
 
         return inter_time
 
     # Esta validacion solo esta por si acaso
     # Nunca deberia fallar, ambas metodologias deberian dar el mismo resultado
-    def validate_inter_time(self, correct_segments, inter_time):
+    def validate_inter_time(self, correct_segments, inter_time, finish_time):
 
         gaps: List[float] = []
         for prev_seg, next_seg in zip(correct_segments[:-1], correct_segments[1:]):
@@ -57,6 +58,13 @@ class TargetTime(BaseMetricCalculator):
             gap = next_start_ci.time - prev_end_ci.time
             if gap > 0:
                 gaps.append(gap)
+
+        #add last gap until finish time
+        last_gap = finish_time - correct_segments[-1][2].time
+        if last_gap > 0:
+            gaps.append(last_gap)
+        # Calculate the alternative inter_time
+
         alt_inter_time = float(np.sum(gaps))
 
         assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
