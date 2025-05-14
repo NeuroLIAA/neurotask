@@ -17,7 +17,7 @@ def test_simple_triangle_deviation():
     from (0,0) to (2,0) should yield area = 1.0.
     """
     pts = np.array([[0, 0], [1, 1], [2, 0]])
-    assert area_between_real_and_ideal_points(pts) == pytest.approx(1.0, rel=1e-6)
+    assert area_between_real_and_ideal_points(pts) == pytest.approx(1.0, rel=1e-12)
 
 
 def test_return_type_and_non_negative():
@@ -47,7 +47,7 @@ def test_square_deviation():
         [2.0, 0.0],
     ])
     # baseline is (0,0) → (2,0), so area under the "square bump" is exactly 4.0
-    assert area_between_real_and_ideal_points(pts) == pytest.approx(4.0, rel=1e-6)
+    assert area_between_real_and_ideal_points(pts) == pytest.approx(4.0, rel=1e-12)
 
 
 def test_square_both_sides():
@@ -64,7 +64,7 @@ def test_square_both_sides():
         [2.0, -1.0],
         [2.0, 0.0],  # back to baseline at x=2
     ])
-    assert area_between_real_and_ideal_points(pts) == pytest.approx(2.0, rel=1e-6)
+    assert area_between_real_and_ideal_points(pts) == pytest.approx(2.0, rel=1e-12)
 
 
 def test_two_defined_triangles():
@@ -80,4 +80,4 @@ def test_two_defined_triangles():
         [4.0, 0.0],
     ])
     # Cada triángulo tiene área = (base=2 * altura=1) / 2 = 1 → suma = 2
-    assert area_between_real_and_ideal_points(pts) == pytest.approx(2.0, rel=1e-6)
+    assert area_between_real_and_ideal_points(pts) == pytest.approx(2.0, rel=1e-12)
