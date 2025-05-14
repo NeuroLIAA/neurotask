@@ -1,24 +1,15 @@
-from typing import Dict, Any
-
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.distance_calculation import calculate_distance, calculate_total_distance_from_segment
-from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
-from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTTarget
+from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTTarget, TMTSubject
 
 
 class DifferenceFromIdealDistance(BaseMetricCalculator):
 
-    def add_metrics(
-            self,
-            metrics: Dict[str, Any],
-            trial: TMTTrial,
-            **params
-    ) -> Dict[str, Any]:
-        subject = params.get('subject')
-
-        trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-            get_all_trails_between_targets(trial, subject.target_radius))
+    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
+                    correct_intervals, wrong_intervals) -> dict:
 
         differences = []
         for trail in trails_between_targets:

@@ -6,19 +6,20 @@ import pandas as pd
 from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
-from neurotask.tmt.metrics.intra_target_time import TargetTime
+from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touch_calculator import TargetsTouchesCalculator
-from .targets_touch_calculator import number_of_correct_and_incorrect_segments
+from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, \
+    get_correct_and_incorrect_target_touch_intervals
+from .targets_touched import number_of_correct_and_incorrect_targets_touched
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
-from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
+from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial, TMTTarget, CursorInfo
 from ..segmentation.segmentation import calculate_speed_threshold_for_all_subjects
 
 
@@ -72,7 +73,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute target touches.
-            correct_touches, wrong_touches = number_of_correct_and_incorrect_segments(
+            correct_touches, wrong_touches = number_of_correct_and_incorrect_targets_touched(
                 processed_trial, subject.target_radius
             )
 
@@ -94,14 +95,14 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             # Compute trial metrics.
             metric_calculators = get_metric_calculators()
             trial_metrics = compute_trial_metrics(
-                processed_trial,
                 metric_calculators,
+                processed_trial,
+                subject,
                 correct_targets_touches=correct_touches,
                 wrong_targets_touches=wrong_touches,
                 speed_threshold=speed_threshold,
                 consecutive_points=consecutive_points,
                 calculate_crosses=calculate_crosses,
-                subject=subject,
             )
 
             # Combine general trial info with metrics.
@@ -218,22 +219,29 @@ def create_invalid_trial_row(
 
 
 def compute_trial_metrics(
-        trial: TMTTrial,
         metric_calculators: List[BaseMetricCalculator],
-        **params: Any
+        trial: TMTTrial,
+        subject: TMTSubject,
+        correct_targets_touches,
+        wrong_targets_touches,
+        speed_threshold,
+        consecutive_points,
+        calculate_crosses,
 ) -> Dict[str, Any]:
     """
     Itera sobre cada calculador de métricas y va acumulando
     sus resultados en un único dict.
-
-    :param trial: objeto TMTTrial con la trayectoria y datos del ensayo.
-    :param metric_calculators: lista de instancias de clases que implementan add_metrics().
-    :param params: parámetros genéricos (ej. speed_threshold, cut_criteria, etc.).
-    :return: dict con todas las métricas calculadas para este trial.
     """
+
+    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
+        get_all_trails_between_targets(trial, subject.target_radius)
+    )
+    correct_intervals, wrong_intervals = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
-        metrics = calculator.add_metrics(metrics, trial=trial, **params)
+        metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
+                                         speed_threshold, consecutive_points, correct_targets_touches,
+                                         wrong_targets_touches, correct_intervals, wrong_intervals)
     return metrics
 
 
