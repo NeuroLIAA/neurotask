@@ -1,6 +1,7 @@
 from typing import List
 
 import numpy as np
+
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
@@ -45,6 +46,8 @@ class TargetTime(BaseMetricCalculator):
 
         return inter_time
 
+    # Esta validacion solo esta por si acaso
+    # Nunca deberia fallar, ambas metodologias deberian dar el mismo resultado
     def validate_inter_time(self, correct_segments, inter_time):
 
         gaps: List[float] = []
