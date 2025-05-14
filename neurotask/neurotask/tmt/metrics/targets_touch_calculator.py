@@ -2,11 +2,13 @@ from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from .distance_calculation import calculate_distance
-from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo
+from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 
 
 class TargetsTouchesCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics, trial: TMTTrial, **params):
+    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
+                    **params) -> dict:
         if 'correct_targets_touches' not in params:
             raise ValueError("correct_targets must be provided")
 

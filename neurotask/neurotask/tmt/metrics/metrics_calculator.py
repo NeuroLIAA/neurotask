@@ -13,12 +13,12 @@ from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCal
 
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touch_calculator import TargetsTouchesCalculator
+from .targets_touch_calculator import TargetsTouchesCalculator, get_all_trails_between_targets
 from .targets_touch_calculator import number_of_correct_and_incorrect_segments
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
-from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial
+from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial, TMTTarget, CursorInfo
 from ..segmentation.segmentation import calculate_speed_threshold_for_all_subjects
 
 
@@ -94,14 +94,14 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             # Compute trial metrics.
             metric_calculators = get_metric_calculators()
             trial_metrics = compute_trial_metrics(
-                processed_trial,
                 metric_calculators,
+                processed_trial,
+                subject,
                 correct_targets_touches=correct_touches,
                 wrong_targets_touches=wrong_touches,
                 speed_threshold=speed_threshold,
                 consecutive_points=consecutive_points,
                 calculate_crosses=calculate_crosses,
-                subject=subject,
             )
 
             # Combine general trial info with metrics.
@@ -218,8 +218,9 @@ def create_invalid_trial_row(
 
 
 def compute_trial_metrics(
-        trial: TMTTrial,
         metric_calculators: List[BaseMetricCalculator],
+        trial: TMTTrial,
+        subject: TMTSubject,
         **params: Any
 ) -> Dict[str, Any]:
     """
@@ -231,9 +232,13 @@ def compute_trial_metrics(
     :param params: parámetros genéricos (ej. speed_threshold, cut_criteria, etc.).
     :return: dict con todas las métricas calculadas para este trial.
     """
+
+    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
+        get_all_trails_between_targets(trial, subject.target_radius)
+    )
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
-        metrics = calculator.add_metrics(metrics, trial=trial, **params)
+        metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, **params)
     return metrics
 
 

@@ -1,11 +1,12 @@
 from abc import ABC, abstractmethod
 
-from neurotask.tmt.model.tmt_model import TMTTrial
+from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
 class BaseMetricCalculator(ABC):
     @abstractmethod
-    def add_metrics(self, metrics: dict, trial: TMTTrial, **params) -> dict:
+    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], **params) -> dict:
         """
         Añade las claves/valores de esta métrica al dict `metrics`.
         `trial` es tu objeto TMTTrial (o las estructuras que uses).
@@ -14,6 +15,8 @@ class BaseMetricCalculator(ABC):
 
 
 class ReactionTimeCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics, trial: TMTTrial, **params):
+    def add_metrics(self, metrics, trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
+                    **params):
         metrics['rt'] = trial.rt
         return metrics

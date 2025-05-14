@@ -3,7 +3,7 @@ from typing import List, Dict, Any
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
-from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget, TMTTrial
+from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget, TMTTrial, TMTSubject
 
 
 def area_between_real_and_ideal(segment: List[CursorInfo]) -> float:
@@ -59,12 +59,11 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
             self,
             metrics: Dict[str, Any],
             trial: TMTTrial,
+            subject: TMTSubject,
+            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
             **params
     ) -> Dict[str, Any]:
-        subject = params.get('subject')
 
-        trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-            get_all_trails_between_targets(trial, subject.target_radius))
 
         areas = []
         for trail in trails_between_targets:
