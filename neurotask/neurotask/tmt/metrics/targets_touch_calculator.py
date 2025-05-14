@@ -7,9 +7,18 @@ from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 
 
 class TargetsTouchesCalculator(BaseMetricCalculator):
-    def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
-                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches) -> dict:
+    def add_metrics(
+            self,
+            metrics: dict,
+            trial: TMTTrial,
+            subject: TMTSubject,
+            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
+            calculate_crosses: bool,
+            speed_threshold,
+            consecutive_points,
+            correct_targets_touches,
+            wrong_targets_touches
+    ) -> dict:
         metrics['correct_targets_touches'] = correct_targets_touches
         metrics['wrong_targets_touches'] = wrong_targets_touches
 

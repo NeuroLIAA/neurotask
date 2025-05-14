@@ -1,8 +1,7 @@
-from typing import List, Dict, Any
+from typing import List
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
 from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget, TMTTrial, TMTSubject
 
 
@@ -55,11 +54,18 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
 
 class DifferenceFromIdealArea(BaseMetricCalculator):
 
-    def add_metrics(self, metrics: Dict[str, Any], trial: TMTTrial, subject: TMTSubject,
-                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses,
-                    speed_threshold, consecutive_points, correct_targets_touches,
-                    wrong_targets_touches) -> Dict[str, Any]:
-
+    def add_metrics(
+            self,
+            metrics: dict,
+            trial: TMTTrial,
+            subject: TMTSubject,
+            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
+            calculate_crosses: bool,
+            speed_threshold,
+            consecutive_points,
+            correct_targets_touches,
+            wrong_targets_touches
+    ) -> dict:
 
         areas = []
         for trail in trails_between_targets:
