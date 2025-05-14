@@ -1,9 +1,9 @@
-from typing import List, Dict
+from typing import List, Dict, Any
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
-from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget
+from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget, TMTTrial
 
 
 def area_between_real_and_ideal(segment: List[CursorInfo]) -> float:
@@ -53,30 +53,30 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
     return float(area)
 
 
-# class DifferenceFromIdealArea(BaseMetricCalculator):
-#
-#     def add_metrics(
-#             self,
-#             metrics: Dict[str, Any],
-#             trial: TMTTrial,
-#             **params
-#     ) -> Dict[str, Any]:
-#         subject = params.get('subject')
-#
-#         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-#             get_all_trails_between_targets(trial, subject.target_radius))
-#
-#         areas = []
-#         for trail in trails_between_targets:
-#             target, cursor_trail = trail
-#             if target is None:
-#                 continue
-#             area = area_between_real_and_ideal(cursor_trail)
-#             areas.append(area)
-#
-#         metrics['area_difference_from_ideal'] = float(np.mean(areas))
-#
-#         return metrics
+class DifferenceFromIdealArea(BaseMetricCalculator):
+
+    def add_metrics(
+            self,
+            metrics: Dict[str, Any],
+            trial: TMTTrial,
+            **params
+    ) -> Dict[str, Any]:
+        subject = params.get('subject')
+
+        trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
+            get_all_trails_between_targets(trial, subject.target_radius))
+
+        areas = []
+        for trail in trails_between_targets:
+            target, cursor_trail = trail
+            if target is None:
+                continue
+            area = area_between_real_and_ideal(cursor_trail)
+            areas.append(area)
+
+        metrics['area_difference_from_ideal'] = float(np.mean(areas))
+
+        return metrics
 
 # def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
 #     """
