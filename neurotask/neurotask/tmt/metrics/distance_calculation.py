@@ -8,6 +8,7 @@ from ..model.tmt_model import Coordinate, TMTTrial, CursorInfo, TMTSubject, TMTT
 class TotalDistanceCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
+                    calculate_crosses: bool,
                     **params) -> dict:
         metrics['total_distance'] = calculate_total_distance(trial)
         return metrics
