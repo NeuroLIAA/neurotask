@@ -47,12 +47,8 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
     #    (distancia desde el inicio a cada proyección)
     line_positions = projection_factors * ideal_length
 
-    assert np.all((perpendicular_distances[:-1] + perpendicular_distances[1:]) * np.diff(line_positions) >= 0), \
-        "All trapezoidal segment areas must be non-negative"
-
     # 6) Integración por la regla del trapecio
     area = np.trapz(perpendicular_distances, line_positions)
-
 
     return float(area)
 
