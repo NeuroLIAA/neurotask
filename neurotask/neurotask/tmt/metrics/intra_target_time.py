@@ -1,4 +1,4 @@
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
@@ -34,4 +34,36 @@ class TargetTime(BaseMetricCalculator):
         # 4. Media de los tiempos, o NaN si no hay segmentos
         metrics['intra_target_time'] = float(np.mean(intra_times))
 
+        total_dwell = float(np.sum(intra_times))
+
+        inter_time = self.calculate_inter_time(correct_segments, metrics, total_dwell, trial)
+        metrics['inter_target_time'] = inter_time
+
         return metrics
+
+    def calculate_inter_time(self, correct_segments, metrics, total_dwell, trial):
+
+        total_time = trial.get_cursor_trail_from_start()[-1].time - trial.start.time
+
+        inter_time = total_time - total_dwell
+
+        inter_time = float(inter_time)
+
+        self.validate_inter_time(correct_segments, inter_time)
+
+        return inter_time
+
+    def validate_inter_time(self, correct_segments, inter_time):
+
+        gaps: List[float] = []
+        for prev_seg, next_seg in zip(correct_segments[:-1], correct_segments[1:]):
+            _, _, prev_end_ci = prev_seg
+            _, next_start_ci, _ = next_seg
+            gap = next_start_ci.time - prev_end_ci.time
+            if gap > 0:
+                gaps.append(gap)
+        alt_inter_time = float(np.sum(gaps))
+
+        assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
+            f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
+        )
