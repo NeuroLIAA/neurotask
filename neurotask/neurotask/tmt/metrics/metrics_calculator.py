@@ -6,16 +6,16 @@ import pandas as pd
 from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
-from neurotask.tmt.metrics.intra_target_time import TargetTime
+from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touch_calculator import TargetsTouchesCalculator, get_all_trails_between_targets, \
+from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, \
     get_correct_and_incorrect_target_touch_intervals
-from .targets_touch_calculator import number_of_correct_and_incorrect_targets_touched
+from .targets_touched import number_of_correct_and_incorrect_targets_touched
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause

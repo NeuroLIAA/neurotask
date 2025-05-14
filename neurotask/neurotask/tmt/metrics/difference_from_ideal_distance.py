@@ -1,9 +1,6 @@
-from typing import Dict, Any
-
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.distance_calculation import calculate_distance, calculate_total_distance_from_segment
-from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
 from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTTarget, TMTSubject
 
 

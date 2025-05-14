@@ -2,7 +2,7 @@ import logging
 from typing import Optional, Tuple, List
 
 from neurotask.tmt.cut_criteria.cut_criteria import CutCriteria
-from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_target_touch_intervals
+from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
