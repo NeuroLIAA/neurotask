@@ -1,13 +1,12 @@
-from typing import List
+from typing import List, Dict
 
 import numpy as np
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.targets_touch_calculator import get_all_trails_between_targets
 from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget
 
 
-def area_between_real_and_ideal(
-        segment: List[CursorInfo]
-) -> float:
+def area_between_real_and_ideal(segment: List[CursorInfo]) -> float:
     # 1) Extraer coordenadas (x, y) de los puntos reales
     point_coords = np.array([[cursor_info.position.x, cursor_info.position.y] for cursor_info in segment], dtype=float)
 
@@ -44,42 +43,44 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
     # 4) Calcular distancia perpendicular de cada punto real a la ideal
     perpendicular_distances = np.linalg.norm(point_coords - projection_points, axis=1)
 
-    #check if there
-
     # 5) Coordenadas escalarizadas a lo largo de la línea ideal
     #    (distancia desde el inicio a cada proyección)
     line_positions = projection_factors * ideal_length
 
+    assert np.all((perpendicular_distances[:-1] + perpendicular_distances[1:]) * np.diff(line_positions) >= 0), \
+        "All trapezoidal segment areas must be non-negative"
+
     # 6) Integración por la regla del trapecio
     area = np.trapz(perpendicular_distances, line_positions)
+
 
     return float(area)
 
 
-class DifferenceFromIdealArea(BaseMetricCalculator):
-
-    def add_metrics(
-            self,
-            metrics: Dict[str, Any],
-            trial: TMTTrial,
-            **params
-    ) -> Dict[str, Any]:
-        subject = params.get('subject')
-
-        trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-            get_all_trails_between_targets(trial, subject.target_radius))
-
-        areas = []
-        for trail in trails_between_targets:
-            target, cursor_trail = trail
-            if target is None:
-                continue
-            area = area_between_real_and_ideal(cursor_trail)
-            areas.append(area)
-
-        metrics['area_difference_from_ideal'] = float(np.mean(areas))
-
-        return metrics
+# class DifferenceFromIdealArea(BaseMetricCalculator):
+#
+#     def add_metrics(
+#             self,
+#             metrics: Dict[str, Any],
+#             trial: TMTTrial,
+#             **params
+#     ) -> Dict[str, Any]:
+#         subject = params.get('subject')
+#
+#         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
+#             get_all_trails_between_targets(trial, subject.target_radius))
+#
+#         areas = []
+#         for trail in trails_between_targets:
+#             target, cursor_trail = trail
+#             if target is None:
+#                 continue
+#             area = area_between_real_and_ideal(cursor_trail)
+#             areas.append(area)
+#
+#         metrics['area_difference_from_ideal'] = float(np.mean(areas))
+#
+#         return metrics
 
 # def build_ideal_trail_segment(segment: List[CursorInfo]) -> List[CursorInfo]:
 #     """
