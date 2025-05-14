@@ -1,23 +1,17 @@
 from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
+
 from .distance_calculation import calculate_distance
 from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 
 
 class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
-                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-                    calculate_crosses: bool,
-                    **params) -> dict:
-        if 'correct_targets_touches' not in params:
-            raise ValueError("correct_targets must be provided")
-
-        if 'wrong_targets_touches' not in params:
-            raise ValueError("wrong_targets must be provided")
-
-        metrics['correct_targets_touches'] = params.get('correct_targets_touches', 0)
-        metrics['wrong_targets_touches'] = params.get('wrong_targets_touches', 0)
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches) -> dict:
+        metrics['correct_targets_touches'] = correct_targets_touches
+        metrics['wrong_targets_touches'] = wrong_targets_touches
 
         return metrics
 
@@ -47,10 +41,9 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
     return trail_with_targets
 
 
-
 def get_all_trails_between_targets(
-    trial: TMTTrial,
-    target_radius: float
+        trial: TMTTrial,
+        target_radius: float
 ) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
     """
     Devuelve, para cada target en `trial.stimuli`, la lista de CursorInfo
@@ -90,6 +83,7 @@ def get_all_trails_between_targets(
             break
 
     return segments
+
 
 def get_touched_target_or_none(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> Optional[TMTTarget]:
     """

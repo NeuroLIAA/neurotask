@@ -5,13 +5,9 @@ from neurotask.tmt.segmentation.segmentation import calculate_segmentation_trial
 
 class SegmentationMetricCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
-                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-                    **params) -> dict:
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches) -> dict:
 
-        speed_threshold = params.get('speed_threshold')
-        if speed_threshold is None:
-            raise ValueError("Speed threshold must be provided")
-        consecutive_points = params.get('consecutive_points')
         if consecutive_points is None:
             raise ValueError("Consecutive points must be provided")
 

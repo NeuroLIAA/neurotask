@@ -221,16 +221,15 @@ def compute_trial_metrics(
         metric_calculators: List[BaseMetricCalculator],
         trial: TMTTrial,
         subject: TMTSubject,
-        **params: Any
+        correct_targets_touches,
+        wrong_targets_touches,
+        speed_threshold,
+        consecutive_points,
+        calculate_crosses,
 ) -> Dict[str, Any]:
     """
     Itera sobre cada calculador de métricas y va acumulando
     sus resultados en un único dict.
-
-    :param trial: objeto TMTTrial con la trayectoria y datos del ensayo.
-    :param metric_calculators: lista de instancias de clases que implementan add_metrics().
-    :param params: parámetros genéricos (ej. speed_threshold, cut_criteria, etc.).
-    :return: dict con todas las métricas calculadas para este trial.
     """
 
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
@@ -238,7 +237,9 @@ def compute_trial_metrics(
     )
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
-        metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, **params)
+        metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
+                                         speed_threshold, consecutive_points, correct_targets_touches,
+                                         wrong_targets_touches)
     return metrics
 
 

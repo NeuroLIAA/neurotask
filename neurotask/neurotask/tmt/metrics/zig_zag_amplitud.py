@@ -1,5 +1,3 @@
-from typing import Dict, Any
-
 import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.targets_touch_calculator import get_correct_and_incorrect_target_touch_intervals
@@ -7,10 +5,10 @@ from neurotask.tmt.model.tmt_model import TMTTrial, TrialType, TMTSubject, TMTTa
 
 
 class ZigZagAmplitude(BaseMetricCalculator):
+
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
-                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-                    calculate_crosses: bool,
-                    **params) -> dict:
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
+                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches) -> dict:
 
         # Solo aplicable a Parte B
         if trial.trial_type != TrialType.PART_B:

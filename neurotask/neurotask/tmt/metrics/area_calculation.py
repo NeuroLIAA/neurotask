@@ -55,14 +55,10 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
 
 class DifferenceFromIdealArea(BaseMetricCalculator):
 
-    def add_metrics(
-            self,
-            metrics: Dict[str, Any],
-            trial: TMTTrial,
-            subject: TMTSubject,
-            trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
-            **params
-    ) -> Dict[str, Any]:
+    def add_metrics(self, metrics: Dict[str, Any], trial: TMTTrial, subject: TMTSubject,
+                    trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses,
+                    speed_threshold, consecutive_points, correct_targets_touches,
+                    wrong_targets_touches) -> Dict[str, Any]:
 
 
         areas = []
