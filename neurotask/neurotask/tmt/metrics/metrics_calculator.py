@@ -51,15 +51,26 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
     for trial in subject.testing_trials:
         # Check initial validity.
-        if not trial.is_valid():
-            logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
+        try:
+            if not trial.is_valid():
+                logging.warning(f"Trial {trial.id} of subject {subject_id} is not valid from the mapper.")
+                rows.append(
+                    create_invalid_trial_row(
+                        subject, subject_id, trial, speed_threshold,
+                        invalid_cause=InvalidCause.INVALID_MODEL
+                    )
+                )
+                continue
+        except Exception as e:
+            logging.exception(f"Error checking validity of trial {trial.id} for subject {subject_id}: {e}")
             rows.append(
                 create_invalid_trial_row(
                     subject, subject_id, trial, speed_threshold,
-                    invalid_cause=InvalidCause.INVALID_MODEL
+                    invalid_cause=InvalidCause.UNABLE_TO_DETERMINE_START
                 )
             )
             continue
+
 
         try:
             processed_trial = trial
