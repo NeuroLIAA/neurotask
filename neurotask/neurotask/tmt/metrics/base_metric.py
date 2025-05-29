@@ -11,8 +11,6 @@ class BaseMetricCalculator(ABC):
         """
         Añade las claves/valores de esta métrica al dict `metrics`.
         `trial` es tu objeto TMTTrial (o las estructuras que uses).
-        :param correct_intervals:
-        :param wrong_intervals:
         """
         pass
 
