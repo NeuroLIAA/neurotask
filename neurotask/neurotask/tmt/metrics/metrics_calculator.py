@@ -167,17 +167,18 @@ def get_cut_trial_metric_calculators():
 
 
 def get_non_cut_trial_metric_calculators():
+    prefix = "non_cut_"
     return [
-        ZigZagAmplitude(),
-        TotalDistanceCalculator(),
-        ReactionTimeCalculator(),
-        SpeedMetricsCalculator(),
-        SegmentationMetricCalculator(),
-        TargetsTouchesCalculator(),
-        CrossesMetricCalculator(),
-        DifferenceFromIdealDistance(),
-        DifferenceFromIdealArea(),
-        TargetTime()
+        ZigZagAmplitude(prefix),
+        TotalDistanceCalculator(prefix),
+        ReactionTimeCalculator(prefix),
+        SpeedMetricsCalculator(prefix),
+        SegmentationMetricCalculator(prefix),
+        TargetsTouchesCalculator(prefix),
+        CrossesMetricCalculator(prefix),
+        DifferenceFromIdealDistance(prefix),
+        DifferenceFromIdealArea(prefix),
+        TargetTime(prefix)
     ]
 
 
