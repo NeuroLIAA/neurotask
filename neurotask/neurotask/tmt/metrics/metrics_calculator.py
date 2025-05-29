@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 
 import numpy as np
 import pandas as pd
+
 from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
@@ -10,7 +11,6 @@ from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
-
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
 from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, \
@@ -71,7 +71,6 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             )
             continue
 
-
         try:
             processed_trial = trial
 
@@ -103,22 +102,17 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     )
                     continue
 
-            # Compute trial metrics.
-            metric_calculators = get_metric_calculators()
-            trial_metrics = compute_trial_metrics(
-                metric_calculators,
-                processed_trial,
-                subject,
-                correct_targets_touches=correct_touches,
-                wrong_targets_touches=wrong_touches,
-                speed_threshold=speed_threshold,
-                consecutive_points=consecutive_points,
-                calculate_crosses=calculate_crosses,
-            )
-
-            # Combine general trial info with metrics.
             valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
-            valid_row.update(trial_metrics)
+
+            if cut_criteria is not None:
+                non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
+                                                                  speed_threshold, subject)
+                valid_row.update(non_cut_trial_metrics)
+
+            cut_trial_metrics = get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial,
+                                                      speed_threshold, subject)
+            valid_row.update(cut_trial_metrics)
+
             rows.append(valid_row)
 
         except Exception as e:
@@ -133,7 +127,31 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
     return rows
 
 
-def get_metric_calculators():
+def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
+    metric_calculators = get_cut_trial_metric_calculators()
+    return compute_trial_metrics(
+        metric_calculators,
+        trial,
+        subject,
+        speed_threshold=speed_threshold,
+        consecutive_points=consecutive_points,
+        calculate_crosses=calculate_crosses,
+    )
+
+
+def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
+    metric_calculators = get_non_cut_trial_metric_calculators()
+    return compute_trial_metrics(
+        metric_calculators,
+        trial,
+        subject,
+        speed_threshold=speed_threshold,
+        consecutive_points=consecutive_points,
+        calculate_crosses=calculate_crosses,
+    )
+
+
+def get_cut_trial_metric_calculators():
     return [
         ZigZagAmplitude(),
         TotalDistanceCalculator(),
@@ -145,6 +163,22 @@ def get_metric_calculators():
         DifferenceFromIdealDistance(),
         DifferenceFromIdealArea(),
         TargetTime()
+    ]
+
+
+def get_non_cut_trial_metric_calculators():
+    prefix = "non_cut_"
+    return [
+        ZigZagAmplitude(prefix),
+        TotalDistanceCalculator(prefix),
+        ReactionTimeCalculator(prefix),
+        SpeedMetricsCalculator(prefix),
+        SegmentationMetricCalculator(prefix),
+        TargetsTouchesCalculator(prefix),
+        CrossesMetricCalculator(prefix),
+        DifferenceFromIdealDistance(prefix),
+        DifferenceFromIdealArea(prefix),
+        TargetTime(prefix)
     ]
 
 
@@ -233,8 +267,6 @@ def compute_trial_metrics(
         metric_calculators: List[BaseMetricCalculator],
         trial: TMTTrial,
         subject: TMTSubject,
-        correct_targets_touches,
-        wrong_targets_touches,
         speed_threshold,
         consecutive_points,
         calculate_crosses,
@@ -251,8 +283,7 @@ def compute_trial_metrics(
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, correct_targets_touches,
-                                         wrong_targets_touches, correct_intervals, wrong_intervals)
+                                         speed_threshold, consecutive_points, correct_intervals, wrong_intervals)
     return metrics
 
 

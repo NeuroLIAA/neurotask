@@ -1,7 +1,6 @@
 from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-
 from .distance_calculation import calculate_distance
 from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 
@@ -9,10 +8,13 @@ from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
-        metrics['correct_targets_touches'] = correct_targets_touches
-        metrics['wrong_targets_touches'] = wrong_targets_touches
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
+        correct_touches, wrong_touches = number_of_correct_and_incorrect_targets_touched(
+            trial, subject.target_radius
+        )
+
+        metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
+        metrics[self.get_metric_name('wrong_targets_touches')] = wrong_touches
 
         return metrics
 

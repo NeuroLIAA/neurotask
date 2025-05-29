@@ -7,12 +7,11 @@ class ZigZagAmplitude(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
 
         # Solo aplicable a Parte B
         if trial.trial_type != TrialType.PART_B:
-            metrics['zigzag_amplitude'] = np.nan
+            metrics[self.get_metric_name('zigzag_amplitude')] = np.nan
             return metrics
 
         target_radius = subject.target_radius
@@ -32,8 +31,8 @@ class ZigZagAmplitude(BaseMetricCalculator):
 
         # Media de las diferencias, o NaN si no hay pares completos
         if time_differences:
-            metrics['zigzag_amplitude'] = float(np.mean(time_differences))
+            metrics[self.get_metric_name('zigzag_amplitude')] = float(np.mean(time_differences))
         else:
-            metrics['zigzag_amplitude'] = np.nan
+            metrics[self.get_metric_name('zigzag_amplitude')] = np.nan
 
         return metrics

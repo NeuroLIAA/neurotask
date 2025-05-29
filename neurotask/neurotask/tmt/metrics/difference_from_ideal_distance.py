@@ -8,8 +8,7 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
 
         differences = []
         for trail in trails_between_targets:
@@ -19,7 +18,7 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
             difference = self.calculate_distance_difference_from_ideal(cursor_trail)
             differences.append(difference)
 
-        metrics['distance_difference_from_ideal'] = float(np.mean(differences))
+        metrics[self.get_metric_name('distance_difference_from_ideal')] = float(np.mean(differences))
 
         return metrics
 

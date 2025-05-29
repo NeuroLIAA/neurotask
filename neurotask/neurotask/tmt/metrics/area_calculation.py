@@ -56,8 +56,7 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
 
         areas = []
         for trail in trails_between_targets:
@@ -67,6 +66,6 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
             area = area_between_real_and_ideal(cursor_trail)
             areas.append(area)
 
-        metrics['area_difference_from_ideal'] = float(np.mean(areas))
+        metrics[self.get_metric_name('area_difference_from_ideal')] = float(np.mean(areas))
 
         return metrics
