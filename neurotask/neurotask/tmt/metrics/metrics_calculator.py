@@ -102,17 +102,17 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     )
                     continue
 
-            # Compute trial metrics.
+            valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
+
+            if cut_criteria is not None:
+                non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
+                                                                  speed_threshold, subject)
+                valid_row.update(non_cut_trial_metrics)
+
             cut_trial_metrics = get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial,
                                                       speed_threshold, subject)
-
-            non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
-                                                              speed_threshold, subject)
-
-            # Combine general trial info with metrics.
-            valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
             valid_row.update(cut_trial_metrics)
-            valid_row.update(non_cut_trial_metrics)
+
             rows.append(valid_row)
 
         except Exception as e:
