@@ -104,7 +104,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute trial metrics.
-            metric_calculators = get_metric_calculators()
+            metric_calculators = get_processed_trial_metric_calculators()
             trial_metrics = compute_trial_metrics(
                 metric_calculators,
                 processed_trial,
@@ -133,7 +133,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
     return rows
 
 
-def get_metric_calculators():
+def get_processed_trial_metric_calculators():
     return [
         ZigZagAmplitude(),
         TotalDistanceCalculator(),
