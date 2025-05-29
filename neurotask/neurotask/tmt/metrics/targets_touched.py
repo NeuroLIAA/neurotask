@@ -13,8 +13,8 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
             trial, subject.target_radius
         )
 
-        metrics['correct_targets_touches'] = correct_touches
-        metrics['wrong_targets_touches'] = wrong_touches
+        metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
+        metrics[self.get_metric_name('wrong_targets_touches')] = wrong_touches
 
         return metrics
 

@@ -11,7 +11,7 @@ class ZigZagAmplitude(BaseMetricCalculator):
 
         # Solo aplicable a Parte B
         if trial.trial_type != TrialType.PART_B:
-            metrics['zigzag_amplitude'] = np.nan
+            metrics[self.get_metric_name('zigzag_amplitude')] = np.nan
             return metrics
 
         target_radius = subject.target_radius
@@ -31,8 +31,8 @@ class ZigZagAmplitude(BaseMetricCalculator):
 
         # Media de las diferencias, o NaN si no hay pares completos
         if time_differences:
-            metrics['zigzag_amplitude'] = float(np.mean(time_differences))
+            metrics[self.get_metric_name('zigzag_amplitude')] = float(np.mean(time_differences))
         else:
-            metrics['zigzag_amplitude'] = np.nan
+            metrics[self.get_metric_name('zigzag_amplitude')] = np.nan
 
         return metrics

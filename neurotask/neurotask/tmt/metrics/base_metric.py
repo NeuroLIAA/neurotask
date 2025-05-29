@@ -31,5 +31,5 @@ class ReactionTimeCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
-        metrics['rt'] = trial.rt
+        metrics[self.get_metric_name('rt')] = trial.rt
         return metrics

@@ -66,6 +66,6 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
             area = area_between_real_and_ideal(cursor_trail)
             areas.append(area)
 
-        metrics['area_difference_from_ideal'] = float(np.mean(areas))
+        metrics[self.get_metric_name('area_difference_from_ideal')] = float(np.mean(areas))
 
         return metrics

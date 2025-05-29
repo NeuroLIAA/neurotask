@@ -18,5 +18,8 @@ class SegmentationMetricCalculator(BaseMetricCalculator):
             consecutive_points
         )
 
-        metrics.update(segmentation)
+        # Aplicar el método get_metric_name a cada clave del diccionario
+        for key, value in segmentation.items():
+            metrics[self.get_metric_name(key)] = value
+
         return metrics

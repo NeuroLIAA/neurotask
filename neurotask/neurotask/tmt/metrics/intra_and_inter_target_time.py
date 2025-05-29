@@ -24,12 +24,12 @@ class TargetTime(BaseMetricCalculator):
             intra_times.append(dwell_time)
 
         # 4. Media de los tiempos, o NaN si no hay segmentos
-        metrics['intra_target_time'] = float(np.mean(intra_times))
+        metrics[self.get_metric_name('intra_target_time')] = float(np.mean(intra_times))
 
         total_dwell = float(np.sum(intra_times))
 
         inter_time = self.calculate_inter_time(correct_intervals, total_dwell, trial)
-        metrics['inter_target_time'] = inter_time
+        metrics[self.get_metric_name('inter_target_time')] = inter_time
 
         return metrics
 
