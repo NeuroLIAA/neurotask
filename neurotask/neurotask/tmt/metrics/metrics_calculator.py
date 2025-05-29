@@ -109,8 +109,6 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                 metric_calculators,
                 processed_trial,
                 subject,
-                correct_targets_touches=correct_touches,
-                wrong_targets_touches=wrong_touches,
                 speed_threshold=speed_threshold,
                 consecutive_points=consecutive_points,
                 calculate_crosses=calculate_crosses,
@@ -233,8 +231,6 @@ def compute_trial_metrics(
         metric_calculators: List[BaseMetricCalculator],
         trial: TMTTrial,
         subject: TMTSubject,
-        correct_targets_touches,
-        wrong_targets_touches,
         speed_threshold,
         consecutive_points,
         calculate_crosses,
@@ -251,8 +247,7 @@ def compute_trial_metrics(
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, correct_targets_touches,
-                                         wrong_targets_touches, correct_intervals, wrong_intervals)
+                                         speed_threshold, consecutive_points, correct_intervals, wrong_intervals)
     return metrics
 
 

@@ -7,8 +7,7 @@ class BaseMetricCalculator(ABC):
     @abstractmethod
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
         """
         Añade las claves/valores de esta métrica al dict `metrics`.
         `trial` es tu objeto TMTTrial (o las estructuras que uses).
@@ -21,7 +20,6 @@ class BaseMetricCalculator(ABC):
 class ReactionTimeCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_targets_touches, wrong_targets_touches,
-                    correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
         metrics['rt'] = trial.rt
         return metrics
