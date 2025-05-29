@@ -106,8 +106,8 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             cut_trial_metrics = get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial,
                                                       speed_threshold, subject)
 
-            non_cut_trial_metrics = get_non_trial_metrics(calculate_crosses, consecutive_points, trial,
-                                                            speed_threshold, subject)
+            non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
+                                                              speed_threshold, subject)
 
             # Combine general trial info with metrics.
             valid_row = general_trial_info(speed_threshold, subject, subject_id, trial)
@@ -126,37 +126,29 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
     return rows
 
-def get_non_trial_metrics(calculate_crosses, consecutive_points, processed_trial, speed_threshold, subject):
-    metric_calculators = get_non_cut_trial_metric_calculators()
 
-    return get_trial_metrics(calculate_crosses, consecutive_points, metric_calculators, processed_trial,
-                             speed_threshold, subject)
-
-
-def get_trial_metrics(calculate_crosses, consecutive_points, metric_calculators, processed_trial, speed_threshold,
-                      subject):
-    trial_metrics = compute_trial_metrics(
-        metric_calculators,
-        processed_trial,
-        subject,
-        speed_threshold=speed_threshold,
-        consecutive_points=consecutive_points,
-        calculate_crosses=calculate_crosses,
-    )
-    return trial_metrics
-
-
-def get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial, speed_threshold, subject):
+def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
     metric_calculators = get_cut_trial_metric_calculators()
-    trial_metrics = compute_trial_metrics(
+    return compute_trial_metrics(
         metric_calculators,
-        processed_trial,
+        trial,
         subject,
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points,
         calculate_crosses=calculate_crosses,
     )
-    return trial_metrics
+
+
+def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
+    metric_calculators = get_non_cut_trial_metric_calculators()
+    return compute_trial_metrics(
+        metric_calculators,
+        trial,
+        subject,
+        speed_threshold=speed_threshold,
+        consecutive_points=consecutive_points,
+        calculate_crosses=calculate_crosses,
+    )
 
 
 def get_cut_trial_metric_calculators():
@@ -172,6 +164,7 @@ def get_cut_trial_metric_calculators():
         DifferenceFromIdealArea(),
         TargetTime()
     ]
+
 
 def get_non_cut_trial_metric_calculators():
     return [
