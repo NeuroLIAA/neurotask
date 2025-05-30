@@ -126,12 +126,9 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
 
     for cursor_info in cursor_trail:
         cursor_pos = cursor_info.position
-        over_target = False
 
-        if current_target_index >= len(stimuli_sequence):
-            # All targets have been processed
-            over_target_flags.append((False, None))
-            continue
+        if current_target_index > len(stimuli_sequence):
+            raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
 
         current_target = stimuli_sequence[current_target_index]
         target_pos = current_target.position
