@@ -3,8 +3,8 @@ import math
 from typing import List, Tuple, Dict, Optional
 
 import numpy as np
-from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds
 
+from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds
 from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
@@ -127,7 +127,9 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
     for cursor_info in cursor_trail:
         cursor_pos = cursor_info.position
 
-        if current_target_index > len(stimuli_sequence):
+        if current_target_index == len(stimuli_sequence):
+            break
+        elif current_target_index > len(stimuli_sequence):
             raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
 
         current_target = stimuli_sequence[current_target_index]
