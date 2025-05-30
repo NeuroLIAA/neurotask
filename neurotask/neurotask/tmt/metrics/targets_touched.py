@@ -14,7 +14,7 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
-        metrics[self.get_metric_name('wrong_targets_touches')] = 0 #TODO GIAN
+        metrics[self.get_metric_name('wrong_targets_touches')] = count_incorrect_touches(trial, subject.target_radius)
 
         return metrics
 
@@ -141,3 +141,87 @@ def get_target_intervals(
         intervals.append((target, start_info, end_info))
 
     return intervals
+
+
+
+# INCORRECT TARGETS Touched
+
+
+def count_incorrect_touches(
+    trial: TMTTrial,
+    target_radius: float
+) -> int:
+    """
+    Cuenta globalmente la cantidad de toques erróneos,
+    siguiendo las reglas acordadas.
+    """
+    # 1. Obtenemos la secuencia (touched_list, cursor_info)
+    trail = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # 2. Inicializamos índices y estados
+    expected_idx = 1
+    previous = trial.stimuli[0]
+    expected = trial.stimuli[expected_idx]
+    error_count = 0
+    prev_was_error = False
+
+    # 3. Recorremos cada punto de cursor
+    for touched_list, cursor_info in trail:
+
+        # 3.1 Si tocó el siguiente esperado → avanzamos, reseteamos prev_was_error
+        if expected in touched_list:
+            expected_idx += 1
+            previous = expected
+            expected = (trial.stimuli[expected_idx]
+                        if expected_idx < len(trial.stimuli)
+                        else None)
+            prev_was_error = False
+            continue
+
+        # 3.2 Si no tocó ningún target → ignoramos
+        if not touched_list:
+            prev_was_error = False
+            continue
+
+        # 3.3 Chequeo de errores en este punto:
+        #     - Para cada t en touched_list:
+        #         * Obtenemos los targets que solapan con t
+        #         * Si alguno de ellos ES expected o ES previous → ¡no es error!
+        #     - Si ninguno cumple → es error (contamos sólo una vez por punto)
+        is_error = True
+        for t in touched_list:
+            # aquí necesitamos una función auxiliar overlap(t) → List[TMTTarget]
+            solapados = get_overlapping_targets(t, trial, target_radius)
+            if previous in solapados or expected in solapados:
+                is_error = False
+                break
+
+        # 3.4 Contar el error sólo al “entrar” en un estado erróneo
+        if is_error and not prev_was_error:
+            error_count += 1
+            prev_was_error = True
+        elif not is_error:
+            prev_was_error = False
+
+    return error_count
+
+
+
+def get_overlapping_targets(
+    target: TMTTarget,
+    trial: TMTTrial,
+    target_radius: float
+) -> List[TMTTarget]:
+    """
+    Recorre todos los targets en `trial.stimuli` y devuelve la lista de
+    aquellos que geométricamente solapan con `target`, considerando
+    que dos targets solapan si la distancia entre sus centros es
+    menor o igual a 2 * target_radius.
+    """
+    overlapping: List[TMTTarget] = []
+    for t in trial.stimuli:
+        # calculamos la distancia entre los centros
+        dist = calculate_distance(target.position, t.position)
+        if dist <= 2 * target_radius:
+            overlapping.append(t)
+    return overlapping
