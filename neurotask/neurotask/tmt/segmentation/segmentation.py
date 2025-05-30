@@ -132,7 +132,7 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
             previous_target =  stimuli_sequence[current_target_index-1]
             previous_target_pos = previous_target.position
             over_target_flags.append((True, previous_target_pos))
-            break
+            continue
         elif current_target_index > len(stimuli_sequence):
             raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
 
