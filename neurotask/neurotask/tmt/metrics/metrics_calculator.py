@@ -14,7 +14,6 @@ from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
 from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, get_target_intervals, \
     count_correctly_touched_targets
-from .targets_touched import number_of_correct_and_incorrect_targets_touched
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
@@ -281,9 +280,8 @@ def compute_trial_metrics(
     correct_intervals = get_target_intervals(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
-        # TODO GIAN: wrong intervals
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, correct_intervals, [])
+                                         speed_threshold, consecutive_points, correct_intervals)
     return metrics
 
 

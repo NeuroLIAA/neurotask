@@ -8,7 +8,7 @@ from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
+                    speed_threshold, consecutive_points, correct_intervals) -> dict:
         correct_touches = count_correctly_touched_targets(
             trial, subject.target_radius
         )
@@ -141,13 +141,3 @@ def get_target_intervals(
         intervals.append((target, start_info, end_info))
 
     return intervals
-
-
-
-def number_of_correct_and_incorrect_targets_touched(trial: TMTTrial, target_radius: float) -> Tuple[int, int]:
-    """
-    Devuelve el número de segmentos de targets correctamente tocados e incorrectamente tocados.
-    """
-    correct = count_correctly_touched_targets(trial, target_radius)
-    # TODO GIAN
-    return correct, 0
