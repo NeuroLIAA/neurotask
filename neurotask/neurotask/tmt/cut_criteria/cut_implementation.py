@@ -65,15 +65,14 @@ def cut_trial_at_minimum_targets(
         raise ValueError(f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
             f"but the minimum required is {correct_targets_minimum}.")
 
-    correct_intervals = get_target_intervals(trial, subject.target_radius)
 
-    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, correct_intervals)
+    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject.target_radius)
 
 
 def cut_trial_at_minimum_correct_targets(
         trial: TMTTrial,
         correct_targets_minimum: int,
-        correct_intervals: List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
+        target_radius: float,
 ) -> TMTTrial:
     """
     Cuts the trial at the time corresponding to reaching the minimum correct target touches.
@@ -89,6 +88,8 @@ def cut_trial_at_minimum_correct_targets(
     Raises:
         ValueError: If the trial does not contain the required number of correct target segments.
     """
+    correct_intervals = get_target_intervals(trial, target_radius)
+
     if len(correct_intervals) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
@@ -98,6 +99,7 @@ def cut_trial_at_minimum_correct_targets(
     # Identify the cutoff segment—the one at which the required count is reached.
     cutoff_segment = correct_intervals[correct_targets_minimum - 1]
     cursor_info = cutoff_segment[2]
+    print(f"Cutting trial at target {cutoff_segment[0]}.")
 
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
 

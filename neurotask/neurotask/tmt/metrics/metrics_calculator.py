@@ -19,6 +19,7 @@ from ..cut_criteria.cut_implementation import cut_trial
 from ..invalid_cause import InvalidCause
 from ..model.tmt_model import TMTExperiment, TMTSubject, TMTTrial, TMTTarget, CursorInfo
 from ..segmentation.segmentation import calculate_speed_threshold_for_all_subjects
+from ..segmentation.segmentation_metric import SegmentationMetricCalculator
 
 
 def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
@@ -155,7 +156,7 @@ def get_cut_trial_metric_calculators():
         TotalDistanceCalculator(),
         ReactionTimeCalculator(),
         SpeedMetricsCalculator(),
-        #SegmentationMetricCalculator(),
+        SegmentationMetricCalculator(),
         TargetsTouchesCalculator(),
         CrossesMetricCalculator(),
         DifferenceFromIdealDistance(),
