@@ -9,12 +9,12 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points, correct_intervals, wrong_intervals) -> dict:
-        correct_touches, wrong_touches = number_of_correct_and_incorrect_targets_touched(
+        correct_touches = count_correctly_touched_targets(
             trial, subject.target_radius
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
-        metrics[self.get_metric_name('wrong_targets_touches')] = wrong_touches
+        metrics[self.get_metric_name('wrong_targets_touches')] = 0 #TODO GIAN
 
         return metrics
 
@@ -142,12 +142,6 @@ def get_target_intervals(
 
     return intervals
 
-
-def get_correct_and_incorrect_target_touch_intervals(trial: TMTTrial, target_radius: float) -> Tuple[
-    List[Tuple[TMTTarget, CursorInfo, CursorInfo]],
-    List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
-]:
-    return get_target_intervals(trial, target_radius), None
 
 
 def number_of_correct_and_incorrect_targets_touched(trial: TMTTrial, target_radius: float) -> Tuple[int, int]:

@@ -4,11 +4,10 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
 import pandas as pd
+
 from neurotask.tmt.mapper.mapper import TMTMapper
-from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.metrics.metrics_calculator import calculate_and_save_metrics
 from neurotask.tmt.model.tmt_model import TMTTarget, CursorInfo
-
 from .cut_criteria.cut_criteria import CutCriteria
 
 
@@ -137,7 +136,7 @@ class TMTAnalyzer:
             for trial in subject.testing_trials:
                 try:
                     #TODO GIAN
-                    #correct_segments, incorrect_segments = [],[]
+                    correct_segments, incorrect_segments = [],[]
                     trial_segments = {
                         "trial_id": trial.id,
                         "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],

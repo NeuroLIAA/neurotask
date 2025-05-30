@@ -10,11 +10,10 @@ from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromI
 from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
-from neurotask.tmt.segmentation.segmentation_metric import SegmentationMetricCalculator
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, \
-    get_correct_and_incorrect_target_touch_intervals
+from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, get_target_intervals, \
+    count_correctly_touched_targets
 from .targets_touched import number_of_correct_and_incorrect_targets_touched
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
@@ -83,7 +82,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     continue
 
             # Compute target touches.
-            correct_touches, wrong_touches = number_of_correct_and_incorrect_targets_touched(
+            correct_touches = count_correctly_touched_targets(
                 processed_trial, subject.target_radius
             )
 
@@ -279,11 +278,12 @@ def compute_trial_metrics(
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
         get_all_trails_between_targets(trial, subject.target_radius)
     )
-    correct_intervals, wrong_intervals = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
+    correct_intervals = get_target_intervals(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
+        # TODO GIAN: wrong intervals
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, correct_intervals, wrong_intervals)
+                                         speed_threshold, consecutive_points, correct_intervals, [])
     return metrics
 
 
