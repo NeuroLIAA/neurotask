@@ -80,7 +80,7 @@ def cut_trial_at_minimum_correct_targets(
     Args:
         trial (TMTTrial): The trial to be cut.
         correct_targets_minimum (int): The required number of correct touches.
-        correct_intervals (List[Tuple[TMTTarget, CursorInfo, CursorInfo]]): The intervals of correct touches.
+        target_radius (float): The radius of the target used to determine correct touches.
 
     Returns:
         TMTTrial: The trial cut at the appropriate time.
@@ -88,17 +88,27 @@ def cut_trial_at_minimum_correct_targets(
     Raises:
         ValueError: If the trial does not contain the required number of correct target segments.
     """
-    correct_intervals = get_target_intervals(trial, target_radius)
+    correct_intervals: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_target_intervals(trial, target_radius)
 
     if len(correct_intervals) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
-    # Sort segments by the time the segment started (assumed to be the second element)
-    correct_intervals.sort(key=lambda segment: segment[1].time)
+    # Get the target we're looking for (the Nth target based on correct_targets_minimum)
+    target_to_find = trial.stimuli[correct_targets_minimum - 1]
 
-    # Identify the cutoff segment—the one at which the required count is reached.
-    cutoff_segment = correct_intervals[correct_targets_minimum - 1]
+    # Find the interval that contains this target
+    cutoff_segment = None
+    for interval in correct_intervals:
+        if interval[0] == target_to_find:
+            cutoff_segment = interval
+            break
+
+    # If we couldn't find the target, raise an error
+    if cutoff_segment is None:
+        raise ValueError(f"Could not find interval for target {target_to_find} in trial {trial.id}")
+
     cursor_info = cutoff_segment[2]
+
     print(f"Cutting trial at target {cutoff_segment[0]}.")
 
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
