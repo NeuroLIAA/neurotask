@@ -109,8 +109,6 @@ def cut_trial_at_minimum_correct_targets(
 
     cursor_info = cutoff_segment[2]
 
-    print(f"Cutting trial at target {cutoff_segment[0]}.")
-
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
 
 

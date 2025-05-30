@@ -172,7 +172,7 @@ def get_non_cut_trial_metric_calculators():
         TotalDistanceCalculator(prefix),
         ReactionTimeCalculator(prefix),
         SpeedMetricsCalculator(prefix),
-        #SegmentationMetricCalculator(prefix),
+        SegmentationMetricCalculator(prefix),
         TargetsTouchesCalculator(prefix),
         CrossesMetricCalculator(prefix),
         DifferenceFromIdealDistance(prefix),

@@ -128,6 +128,10 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
         cursor_pos = cursor_info.position
 
         if current_target_index == len(stimuli_sequence):
+            #TODO GIAN: ver si dejarlo asi, en este punto ya termino de tocar todos
+            previous_target =  stimuli_sequence[current_target_index-1]
+            previous_target_pos = previous_target.position
+            over_target_flags.append((True, previous_target_pos))
             break
         elif current_target_index > len(stimuli_sequence):
             raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
