@@ -109,8 +109,8 @@ class TMTAnalyzer:
         Raises an error if run() has not been called yet.
         """
         if self.experiment is None:
-            raise RuntimeError("No experiment has been loaded yet. "
-                               "Did you forget to call run()?")
+            self.experiment = self.mapper.map(self.dataset_path, None) if self.experiment is None else self.experiment
+
         return self.experiment
 
     def get_segments_data(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -136,7 +136,8 @@ class TMTAnalyzer:
             trial_segments_list = []
             for trial in subject.testing_trials:
                 try:
-                    correct_segments, incorrect_segments = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
+                    #TODO GIAN
+                    #correct_segments, incorrect_segments = [],[]
                     trial_segments = {
                         "trial_id": trial.id,
                         "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],

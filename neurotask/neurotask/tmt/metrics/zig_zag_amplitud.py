@@ -19,8 +19,9 @@ class ZigZagAmplitude(BaseMetricCalculator):
         time_differences = []
         # Recorremos pares [número, letra]
         for i in range(0, len(correct_intervals) - 1, 2):
-            number_target, number_start_cursor_info, _ = correct_intervals[i]
-            letter_target, letter_start_cursor_info, _ = correct_intervals[i + 1]
+            #TODO GIAN: dejar mas claro
+            number_target, number_start_cursor_info, _ = correct_intervals[i +1]
+            letter_target, letter_start_cursor_info, _ = correct_intervals[i ]
 
             assert number_target.content.isdigit(), f"Expected number, got {number_target.content}"
             assert letter_target.content.isalpha(), f"Expected letter, got {letter_target.content}"

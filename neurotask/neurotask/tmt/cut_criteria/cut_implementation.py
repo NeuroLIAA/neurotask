@@ -2,7 +2,8 @@ import logging
 from typing import Optional, Tuple, List
 
 from neurotask.tmt.cut_criteria.cut_criteria import CutCriteria
-from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals
+from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals, \
+    count_correctly_touched_targets, get_target_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
@@ -59,16 +60,14 @@ def cut_trial_at_minimum_targets(
         ValueError: If the trial does not meet the required number of correct target touches.
     """
 
-    correct_intervals, _ = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
+    correct_targets_touches = count_correctly_touched_targets(trial, subject.target_radius)
 
-    correct_targets_touches = len(correct_intervals)
 
     if correct_targets_touches < correct_targets_minimum:
-        logging.warning(
-            f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
-            f"but the minimum required is {correct_targets_minimum}."
-        )
-        raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
+        raise ValueError(f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+            f"but the minimum required is {correct_targets_minimum}.")
+
+    correct_intervals = get_target_intervals(trial, subject.target_radius)
 
     return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, correct_intervals)
 
