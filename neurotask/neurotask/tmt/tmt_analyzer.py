@@ -4,11 +4,10 @@ from pathlib import Path
 from typing import Optional, List, Dict, Any, Tuple
 
 import pandas as pd
+
 from neurotask.tmt.mapper.mapper import TMTMapper
-from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals
 from neurotask.tmt.metrics.metrics_calculator import calculate_and_save_metrics
 from neurotask.tmt.model.tmt_model import TMTTarget, CursorInfo
-
 from .cut_criteria.cut_criteria import CutCriteria
 
 
@@ -109,8 +108,8 @@ class TMTAnalyzer:
         Raises an error if run() has not been called yet.
         """
         if self.experiment is None:
-            raise RuntimeError("No experiment has been loaded yet. "
-                               "Did you forget to call run()?")
+            self.experiment = self.mapper.map(self.dataset_path, None) if self.experiment is None else self.experiment
+
         return self.experiment
 
     def get_segments_data(self) -> Dict[str, List[Dict[str, Any]]]:
@@ -136,7 +135,8 @@ class TMTAnalyzer:
             trial_segments_list = []
             for trial in subject.testing_trials:
                 try:
-                    correct_segments, incorrect_segments = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
+                    #TODO GIAN
+                    correct_segments, incorrect_segments = [],[]
                     trial_segments = {
                         "trial_id": trial.id,
                         "correct_segments": [_segment_to_dict(seg) for seg in correct_segments],

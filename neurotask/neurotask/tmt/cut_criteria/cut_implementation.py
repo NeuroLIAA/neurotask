@@ -1,8 +1,7 @@
-import logging
 from typing import Optional, Tuple, List
 
 from neurotask.tmt.cut_criteria.cut_criteria import CutCriteria
-from neurotask.tmt.metrics.targets_touched import get_correct_and_incorrect_target_touch_intervals
+from neurotask.tmt.metrics.targets_touched import count_correctly_touched_targets, get_target_intervals
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
@@ -59,24 +58,21 @@ def cut_trial_at_minimum_targets(
         ValueError: If the trial does not meet the required number of correct target touches.
     """
 
-    correct_intervals, _ = get_correct_and_incorrect_target_touch_intervals(trial, subject.target_radius)
+    correct_targets_touches = count_correctly_touched_targets(trial, subject.target_radius)
 
-    correct_targets_touches = len(correct_intervals)
 
     if correct_targets_touches < correct_targets_minimum:
-        logging.warning(
-            f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
-            f"but the minimum required is {correct_targets_minimum}."
-        )
-        raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
+        raise ValueError(f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
+            f"but the minimum required is {correct_targets_minimum}.")
 
-    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, correct_intervals)
+
+    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject.target_radius)
 
 
 def cut_trial_at_minimum_correct_targets(
         trial: TMTTrial,
         correct_targets_minimum: int,
-        correct_intervals: List[Tuple[TMTTarget, CursorInfo, CursorInfo]]
+        target_radius: float,
 ) -> TMTTrial:
     """
     Cuts the trial at the time corresponding to reaching the minimum correct target touches.
@@ -84,7 +80,7 @@ def cut_trial_at_minimum_correct_targets(
     Args:
         trial (TMTTrial): The trial to be cut.
         correct_targets_minimum (int): The required number of correct touches.
-        correct_intervals (List[Tuple[TMTTarget, CursorInfo, CursorInfo]]): The intervals of correct touches.
+        target_radius (float): The radius of the target used to determine correct touches.
 
     Returns:
         TMTTrial: The trial cut at the appropriate time.
@@ -92,14 +88,25 @@ def cut_trial_at_minimum_correct_targets(
     Raises:
         ValueError: If the trial does not contain the required number of correct target segments.
     """
+    correct_intervals: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_target_intervals(trial, target_radius)
+
     if len(correct_intervals) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
-    # Sort segments by the time the segment started (assumed to be the second element)
-    correct_intervals.sort(key=lambda segment: segment[1].time)
+    # Get the target we're looking for (the Nth target based on correct_targets_minimum)
+    target_to_find = trial.stimuli[correct_targets_minimum - 1]
 
-    # Identify the cutoff segment—the one at which the required count is reached.
-    cutoff_segment = correct_intervals[correct_targets_minimum - 1]
+    # Find the interval that contains this target
+    cutoff_segment = None
+    for interval in correct_intervals:
+        if interval[0] == target_to_find:
+            cutoff_segment = interval
+            break
+
+    # If we couldn't find the target, raise an error
+    if cutoff_segment is None:
+        raise ValueError(f"Could not find interval for target {target_to_find} in trial {trial.id}")
+
     cursor_info = cutoff_segment[2]
 
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
