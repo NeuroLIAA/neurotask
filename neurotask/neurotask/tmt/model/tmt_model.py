@@ -81,7 +81,10 @@ class TMTTrial:
         return (self.with_custom_start is True) == (self.start is not None)
 
     def is_valid_length(self):
-        return len(self.get_cursor_trail_from_start()) > 2
+        try:
+            return len(self.get_cursor_trail_from_start()) > 2
+        except ValueError:
+            return False
 
 
 from dataclasses import dataclass
