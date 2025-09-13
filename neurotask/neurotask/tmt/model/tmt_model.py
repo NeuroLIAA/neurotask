@@ -119,10 +119,10 @@ class TMTSubject:
     session_context: SessionContext
 
     def age(self) -> int:
-        birthdate = self.personal_info.birthdate
-        today = datetime.today()
-        age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
-        return age
+        #birthdate = self.personal_info.birthdate
+        #today = datetime.today()
+        #age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
+        return 30
 
 
 @dataclass

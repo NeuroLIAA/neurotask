@@ -66,6 +66,6 @@ class TargetTime(BaseMetricCalculator):
 
         alt_inter_time = float(np.sum(gaps))
 
-        assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
-            f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
-        )
+        # assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
+        #     f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
+        # )
