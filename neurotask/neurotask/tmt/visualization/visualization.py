@@ -5,8 +5,7 @@ from matplotlib import pyplot as plt
 from ..metrics import calculate_speeds_between_cursor_positions, \
     calculate_accelerations_between_cursor_positions, get_correct_and_incorrect_segments
 from ..model.tmt_model import TMTTrial, TMTExperiment, TrialType
-from ..visualization.utils import calculate_median_segments, \
-    average_performance_by_five_by_five_year_age_groups
+from ..visualization.utils import calculate_median_segments
 
 
 def plot_with_color(trial: TMTTrial, canvas_size: int, target_radius: float, color_by='time'):
@@ -344,46 +343,3 @@ def plot_segment_ranges(experiment: TMTExperiment):
 
 import numpy as np
 
-
-def plot_performance_by_age_group(experiment: TMTExperiment):
-    """
-    Grafica el rendimiento promedio (correctos e incorrectos) para cada rango de edad, con los rangos de edad ordenados.
-
-    Parameters:
-    - experiment: TMTExperiment, la instancia que contiene los sujetos y sus ensayos.
-    """
-    performance_by_age_group = average_performance_by_five_by_five_year_age_groups(experiment)
-
-    # Convertir las llaves del diccionario (rangos de edad) en tuplas numéricas para poder ordenarlas
-    sorted_performance_by_age_group = sorted(performance_by_age_group.items(), key=lambda x: int(x[0].split('-')[0]))
-
-    age_labels = []
-    correct_means = []
-    incorrect_means = []
-
-    # Extraer datos para graficar después de ordenar
-    for age_range, performance in sorted_performance_by_age_group:
-        age_labels.append(age_range)
-        correct_means.append(performance['average_correct'])
-        incorrect_means.append(performance['average_incorrect'])
-
-    # Definir el ancho de las barras
-    bar_width = 0.35
-    index = np.arange(len(age_labels))
-
-    # Crear el gráfico de barras para correctos e incorrectos
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    bar_correct = ax.bar(index, correct_means, bar_width, label='Correctos', color='green', alpha=0.7)
-    bar_incorrect = ax.bar(index + bar_width, incorrect_means, bar_width, label='Incorrectos', color='red', alpha=0.7)
-
-    # Etiquetas y formato del gráfico
-    ax.set_xlabel('Rango de Edad')
-    ax.set_ylabel('Promedio de Segments')
-    ax.set_title('Rendimiento Promedio por Rangos de Edad (Correctos e Incorrectos)')
-    ax.set_xticks(index + bar_width / 2)
-    ax.set_xticklabels(age_labels, rotation=45, ha='right')
-    ax.legend()
-
-    plt.tight_layout()
-    plt.show()
