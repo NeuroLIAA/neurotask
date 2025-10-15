@@ -115,15 +115,7 @@ class TMTSubject:
     testing_trials: List[TMTTrial]
     target_radius: Optional[float]
     canvas_size: Optional[int]
-    personal_info: SubjectPersonalInformation
-    session_context: SessionContext
     session_data: Optional[dict] = None
-
-    def age(self) -> int:
-        #birthdate = self.personal_info.birthdate
-        #today = datetime.today()
-        #age = today.year - birthdate.year - ((today.month, today.day) < (birthdate.month, birthdate.day))
-        return 30
 
 
 @dataclass
