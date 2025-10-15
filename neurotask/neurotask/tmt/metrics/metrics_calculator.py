@@ -211,16 +211,19 @@ def _attempt_cut_trial(
 
 
 def general_trial_info(speed_threshold, subject, subject_id, trial):
+
     trial_row = {
         "subject_id": subject_id,
         "trial_id": trial.id,
         "trial_type": trial.trial_type.name,
-        "age": subject.age(),
-        "gender": subject.personal_info.gender,
         "is_valid": trial.is_valid(),
         "trial_order_of_appearance": trial.order_of_appearance,
         "speed_threshold": speed_threshold
     }
+
+    session_data: Dict[str, str] = subject.session_data if subject.session_data else {}
+    trial_row.update(session_data)
+
     return trial_row
 
 
@@ -240,8 +243,6 @@ def create_invalid_trial_row(
     return {
         "subject_id": subject_id,
         "trial_id": trial.id,
-        "age": subject.age(),
-        "gender": subject.personal_info.gender,
         "total_distance": 0,
         "rt": trial.rt,
         "is_valid": False,
