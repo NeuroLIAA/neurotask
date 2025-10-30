@@ -42,13 +42,15 @@ class TargetTime(BaseMetricCalculator):
 
         inter_time = float(inter_time)
 
-        self.validate_inter_time(correct_segments, inter_time, finish_time)
+        if len(correct_segments) > 0:
+            self.validate_inter_time(correct_segments, inter_time, finish_time)
 
         return inter_time
 
     # Esta validacion solo esta por si acaso
     # Nunca deberia fallar, ambas metodologias deberian dar el mismo resultado
     def validate_inter_time(self, correct_segments, inter_time, finish_time):
+
 
         gaps: List[float] = []
         for prev_seg, next_seg in zip(correct_segments[:-1], correct_segments[1:]):
@@ -59,6 +61,7 @@ class TargetTime(BaseMetricCalculator):
                 gaps.append(gap)
 
         #add last gap until finish time
+
         last_gap = finish_time - correct_segments[-1][2].time
         if last_gap > 0:
             gaps.append(last_gap)

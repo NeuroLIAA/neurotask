@@ -48,6 +48,25 @@ class TMTTrial:
     # Punto de inicio del trial solo debe estar presente si with_custom_start es True
     start: Optional[CursorInfo] = None
 
+    mapping_error: bool = False
+
+    @classmethod
+    def invalid_trial(cls, trial_id: str, order_of_appearance: int, stimuli, trial_type) -> "TMTTrial":
+        """
+        Crea un trial inválido con todos los campos vacíos o None, y mapping_error=True.
+        """
+        return cls(
+            stimuli=stimuli,
+            cursor_trail=[],
+            trial_type=trial_type,  # Tipo desconocido o inválido
+            id=trial_id,
+            order_of_appearance=order_of_appearance,
+            rt=0.0,
+            with_custom_start=False,
+            start=None,
+            mapping_error=True,  # 🔹 marcamos que hubo un error en el mapeo
+        )
+
     def get_cursor_trail_from_start(self) -> List[CursorInfo]:
         """
         Si el trial tiene un punto de inicio personalizado, esta función devuelve la trayectoria del cursor
@@ -72,6 +91,9 @@ class TMTTrial:
         Definimos esto para que nos permita calcular medidas de velocidad y aceleración.
         Ademas, si el trial tiene un punto de inicio personalizado, este debe estar definido.
         """
+        if self.mapping_error:
+            return False
+
         valid_length = self.is_valid_length()
         valid_start_configuration = self.is_valid_start_configuration()
 
