@@ -240,7 +240,7 @@ def create_invalid_trial_row(
         elif not trial.is_valid_length():
             invalid_cause = InvalidCause.INVALID_LENGTH
 
-    return {
+    invalid_trial_row = {
         "subject_id": subject_id,
         "trial_id": trial.id,
         "total_distance": 0,
@@ -261,6 +261,11 @@ def create_invalid_trial_row(
         "hesitation_time": np.nan,
         "invalid_cause": invalid_cause.name
     }
+
+    session_data: Dict[str, str] = subject.session_data if subject.session_data else {}
+    invalid_trial_row.update(session_data)
+
+    return invalid_trial_row
 
 
 def compute_trial_metrics(
