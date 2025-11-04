@@ -7,7 +7,7 @@ from ..model.tmt_model import TMTExperiment
 class TMTMapper(ABC):
 
     @abstractmethod
-    def map(self, data_path: str, metadata_path: Optional[str] = None) -> TMTExperiment:
+    def map(self, data_path: str) -> TMTExperiment:
         """
         Método abstracto para mapear los datos (y opcionalmente la metadata) a una instancia de TMTExperiment.
 
