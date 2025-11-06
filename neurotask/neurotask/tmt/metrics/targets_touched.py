@@ -113,7 +113,7 @@ def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial
     return targets
 
 
-def get_target_intervals(
+def get_all_intervals_between_targets(
         trial: TMTTrial,
         target_radius: float
 ) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:

@@ -43,16 +43,22 @@ class TargetTime(BaseMetricCalculator):
         inter_time = float(inter_time)
 
         if len(correct_segments) > 0:
-            self.validate_inter_time(correct_segments, inter_time, finish_time)
+            self.validate_inter_time(correct_segments, inter_time, finish_time, trial.start.time)
 
         return inter_time
 
     # Esta validacion solo esta por si acaso
     # Nunca deberia fallar, ambas metodologias deberian dar el mismo resultado
-    def validate_inter_time(self, correct_segments, inter_time, finish_time):
-
+    def validate_inter_time(self, correct_segments, inter_time, finish_time, start_time):
 
         gaps: List[float] = []
+
+        # 1) gap inicial: inicio del trial -> primer target
+        _, first_start_ci, _ = correct_segments[0]
+        initial_gap = first_start_ci.time - start_time
+        if initial_gap > 0:
+            gaps.append(initial_gap)
+
         for prev_seg, next_seg in zip(correct_segments[:-1], correct_segments[1:]):
             _, _, prev_end_ci = prev_seg
             _, next_start_ci, _ = next_seg
@@ -69,6 +75,6 @@ class TargetTime(BaseMetricCalculator):
 
         alt_inter_time = float(np.sum(gaps))
 
-        # assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
-        #     f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
-        # )
+        assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
+            f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
+        )
