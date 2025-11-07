@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from .distance_calculation import calculate_distance
@@ -33,6 +33,49 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
         trail_with_targets.append((touched_target_list, cursor_info))
 
     return trail_with_targets
+
+
+def correct_touched_targets_for_every_cursor_point(
+        trial: TMTTrial,
+        target_radius: float
+) -> List[Tuple[Optional[TMTTarget], CursorInfo]]:
+    """
+    Returns a list of tuples for each cursor point, where each tuple contains:
+      - The correct target if the expected target is touched at that point (None otherwise)
+      - The cursor info
+
+    A target is considered "correct" if it's the next expected target in the sequence.
+    Once a target is correctly touched, the next target in trial.stimuli becomes expected.
+
+    :param trial: instancia de TMTTrial
+    :param target_radius: radio para detección de toques
+    :return: lista de (Optional[TMTTarget], CursorInfo) para cada punto de cursor
+    """
+    # Get all touched targets for every cursor point
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # Result list
+    result: List[Tuple[Optional[TMTTarget], CursorInfo]] = []
+
+    # Track the next expected target (starting from index 1, since index 0 is the start)
+    expected_idx = 1
+
+    for touched_list, cursor_info in trail_with_targets:
+        # Check if we've already touched all targets
+        if expected_idx >= len(trial.stimuli):
+            result.append((None, cursor_info))
+            continue
+
+        expected = trial.stimuli[expected_idx]
+
+        # Check if the expected target is in the touched list
+        if expected in touched_list:
+            result.append((expected, cursor_info))
+            expected_idx += 1
+        else:
+            result.append((None, cursor_info))
+
+    return result
 
 
 def get_all_trails_between_targets(
