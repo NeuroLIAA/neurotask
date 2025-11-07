@@ -324,8 +324,8 @@ class TestCorrectTouchedTargetsForEveryCursorPoint:
 
         assert len(result) == 5
 
-        # Point 0: not counted (it's the start target, index 0)
-        assert result[0][0] is None
+        # Point 0: start target touched
+        assert result[0][0] is stimuli[0]
 
         # Point 1: no target touched
         assert result[1][0] is None
@@ -369,8 +369,8 @@ class TestCorrectTouchedTargetsForEveryCursorPoint:
 
         assert len(result) == 3
 
-        # Point 0: start target doesn't count
-        assert result[0][0] is None
+        # Point 0: start target touched
+        assert result[0][0] is stimuli[0]
 
         # Point 1: wrong target touched (expected 1, got 2)
         assert result[1][0] is None
@@ -409,8 +409,8 @@ class TestCorrectTouchedTargetsForEveryCursorPoint:
 
         assert len(result) == 4
 
-        # Point 0: start target
-        assert result[0][0] is None
+        # Point 0: start target touched
+        assert result[0][0] is stimuli[0]
 
         # Point 1: target 1 correctly touched
         assert result[1][0] == stimuli[1]
@@ -449,8 +449,8 @@ class TestCorrectTouchedTargetsForEveryCursorPoint:
 
         assert len(result) == 2
 
-        # Point 0: start target
-        assert result[0][0] is None
+        # Point 0: start target touched
+        assert result[0][0] is stimuli[0]
 
         # Point 1: should return target 1 (the expected one), not target 2
         assert result[1][0] == stimuli[1]

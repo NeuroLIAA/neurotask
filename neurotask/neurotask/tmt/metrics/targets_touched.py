@@ -58,7 +58,7 @@ def correct_touched_targets_for_every_cursor_point(
     result: List[Tuple[Optional[TMTTarget], CursorInfo]] = []
 
     # Track the next expected target (starting from index 1, since index 0 is the start)
-    expected_idx = 1
+    expected_idx = 0
 
     for touched_list, cursor_info in trail_with_targets:
         # Check if we've already touched all targets
