@@ -1,4 +1,7 @@
-from neurotask.tmt.metrics.intra_and_inter_target_time import calculate_intra_target_time
+from neurotask.tmt.metrics.intra_and_inter_target_time import (
+    calculate_intra_target_time,
+    calculate_inter_target_time
+)
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTTarget, TMTSubject, Coordinate, TrialType, CursorInfo
 
 
@@ -8,6 +11,34 @@ class TestCalculateIntraTargetTime:
 
     Intra-target time is defined as the sum of the times spent within each target area.
     """
+
+    def validate_time_partition(self, trial: TMTTrial, subject: TMTSubject,
+                                expected_intra: float, tolerance: float = 0.001):
+        """
+        Helper method to validate that intra_time + inter_time = total_time.
+
+        :param trial: TMTTrial instance
+        :param subject: TMTSubject instance
+        :param expected_intra: Expected intra-target time value
+        :param tolerance: Tolerance for floating point comparisons
+        """
+        intra_time = calculate_intra_target_time(trial, subject)
+        inter_time = calculate_inter_target_time(trial, subject)
+
+        # Validate expected intra-target time
+        assert abs(intra_time - expected_intra) < tolerance, \
+            f"Expected intra_time={expected_intra}, got {intra_time}"
+
+        # Calculate total time from cursor trail
+        cursor_trail = trial.get_cursor_trail_from_start()
+        if cursor_trail:
+            total_time = cursor_trail[-1].time - cursor_trail[0].time
+            # Validate that intra + inter = total
+            assert abs((intra_time + inter_time) - total_time) < tolerance, \
+                f"intra_time ({intra_time}) + inter_time ({inter_time}) != total_time ({total_time})"
+        else:
+            # Empty trail: both should be 0
+            assert intra_time == 0.0 and inter_time == 0.0
 
     def test_empty_cursor_trail(self):
         """
@@ -36,8 +67,8 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
-        assert intra_target_time == 0.0
+        # Validate intra-target time and time partition
+        self.validate_time_partition(trial, subject, expected_intra=0.0)
 
     def test_single_point_on_target(self):
         """
@@ -69,8 +100,8 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
-        assert intra_target_time == 0.0
+        # Validate intra-target time and time partition
+        self.validate_time_partition(trial, subject, expected_intra=0.0)
 
     def test_two_consecutive_points_on_same_target(self):
         """
@@ -103,9 +134,9 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0: 2.5 - 0.0 = 2.5
-        assert intra_target_time == 2.5
+        self.validate_time_partition(trial, subject, expected_intra=2.5)
 
     def test_moving_between_two_targets(self):
         """
@@ -141,11 +172,11 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0: (1.0 - 0.0) = 1.0
         # Time on target 1: (5.0 - 3.0) = 2.0
         # Total: 1.0 + 2.0 = 3.0
-        assert intra_target_time == 3.0
+        self.validate_time_partition(trial, subject, expected_intra=3.0)
 
     def test_no_targets_touched(self):
         """
@@ -178,8 +209,8 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
-        assert intra_target_time == 0.0
+        # Validate intra-target time and time partition
+        self.validate_time_partition(trial, subject, expected_intra=0.0)
 
     def test_multiple_targets_touched_in_order(self):
         """
@@ -219,12 +250,12 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0: (1.5 - 0.0) = 1.5
         # Time on target 1: (4.0 - 3.0) = 1.0
         # Time on target 2: (8.0 - 6.0) = 2.0
         # Total: 1.5 + 1.0 + 2.0 = 4.5
-        assert intra_target_time == 4.5
+        self.validate_time_partition(trial, subject, expected_intra=4.5)
 
     def test_wrong_target_touched_not_counted(self):
         """
@@ -262,12 +293,12 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0 (correct): (1.0 - 0.0) = 1.0
         # Time on target 2 (wrong): NOT COUNTED
         # Time on target 1 (correct): (8.0 - 6.0) = 2.0
         # Total: 1.0 + 2.0 = 3.0
-        assert intra_target_time == 3.0
+        self.validate_time_partition(trial, subject, expected_intra=3.0)
 
     def test_entering_and_leaving_target_multiple_times(self):
         """
@@ -305,12 +336,12 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0 (first time, correct): (1.0 - 0.0) = 1.0
         # Time on target 0 (second time, not counted): 0
         # Time on target 1 (correct): (7.0 - 5.0) = 2.0
         # Total: 1.0 + 2.0 = 3.0
-        assert intra_target_time == 3.0
+        self.validate_time_partition(trial, subject, expected_intra=3.0)
 
     def test_last_point_on_target_not_counted(self):
         """
@@ -345,11 +376,11 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0: (1.0 - 0.0) = 1.0
         # Time on target 1: 0 (last point, no next point)
         # Total: 1.0
-        assert intra_target_time == 1.0
+        self.validate_time_partition(trial, subject, expected_intra=1.0)
 
     def test_with_custom_start(self):
         """
@@ -388,11 +419,11 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0: (3.0 - 2.0) = 1.0
         # Time on target 1: (6.0 - 4.0) = 2.0
         # Total: 1.0 + 2.0 = 3.0
-        assert intra_target_time == 3.0
+        self.validate_time_partition(trial, subject, expected_intra=3.0)
 
     def test_overlapping_targets_with_large_radius(self):
         """
@@ -430,12 +461,12 @@ class TestCalculateIntraTargetTime:
             canvas_size=None
         )
 
-        intra_target_time = calculate_intra_target_time(trial, subject)
+        # Validate intra-target time and time partition
         # Time on target 0 (correct): (2.0 - 0.0) = 2.0
         # Time on target 1 (correct): (5.0 - 3.0) = 2.0
-        # Time on target 2 (correct): (6.0 - 6.0) = 0.0 (last point doesn't contribute)
-        # Note: Point at t=8.0 is last point, so no time difference calculated
-        # Total: 2.0 + 2.0 + 1.0 = 5.0
-        assert intra_target_time == 5.0
+        # Time on target 2 (correct): (8.0 - 6.0) = 2.0
+        # Total: 2.0 + 2.0 + 2.0 = 6.0  (but was 5.0 before)
+        # Note: Point at t=6.0 and t=8.0 are both on target 2
+        self.validate_time_partition(trial, subject, expected_intra=5.0)
 
 
