@@ -12,6 +12,7 @@ class TargetTime(BaseMetricCalculator):
             raise ValueError("Subject must be provided")
 
         metrics['intra_target_time'] = calculate_intra_target_time(trial, subject)
+        metrics['inter_target_time'] = calculate_inter_target_time(trial, subject)
 
         return metrics
 
@@ -104,3 +105,38 @@ def calculate_intra_target_time(
     total_time = sum(end_time - start_time for _, start_time, end_time in intervals)
 
     return total_time
+
+
+def calculate_inter_target_time(
+        trial: TMTTrial,
+        subject: TMTSubject
+) -> float:
+    """
+    Calculate the inter-target time for a given trial and subject.
+    The inter-target time is defined as the time spent moving between targets
+    (i.e., not on any correct target).
+
+    This is calculated as: (last_cursor_time - first_cursor_time) - intra-target time
+
+    :param trial: TMTTrial instance
+    :param subject: TMTSubject instance with target_radius
+    :return: Total time spent between targets in seconds
+    """
+    # Get the cursor trail (respecting custom start if present)
+    cursor_trail = trial.get_cursor_trail_from_start()
+
+    # If no cursor trail, return 0
+    if not cursor_trail:
+        return 0.0
+
+    # Calculate total time from first to last cursor point
+    total_time = cursor_trail[-1].time - trial.start.time
+
+    # Get the intra-target time
+    intra_time = calculate_intra_target_time(trial, subject)
+
+    # Inter-target time is the complement: total time minus time on targets
+    inter_time = total_time - intra_time
+
+    return inter_time
+
