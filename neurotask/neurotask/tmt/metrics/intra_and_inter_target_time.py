@@ -11,6 +11,8 @@ class TargetTime(BaseMetricCalculator):
         if subject is None:
             raise ValueError("Subject must be provided")
 
+        metrics['intra_target_time'] = calculate_intra_target_time(trial, subject)
+
         return metrics
 
 
