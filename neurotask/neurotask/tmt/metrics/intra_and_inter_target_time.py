@@ -129,8 +129,9 @@ def calculate_inter_target_time(
     if not cursor_trail:
         return 0.0
 
+    start_time = trial.start.time if trial.start else cursor_trail[0].time
     # Calculate total time from first to last cursor point
-    total_time = cursor_trail[-1].time - trial.start.time
+    total_time = cursor_trail[-1].time - start_time
 
     # Get the intra-target time
     intra_time = calculate_intra_target_time(trial, subject)
