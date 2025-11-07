@@ -133,13 +133,17 @@ def count_correctly_touched_targets(
     :param target_radius: radio para detección de toques.
     :return: número de targets tocados correctamente.
     """
-    # Obtenemos todos los segmentos hasta el contacto de cada target esperado
-    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = get_all_trails_between_targets(
-        trial,
-        target_radius
-    )
-    # La cantidad de segmentos coincide con la cantidad de targets tocados
-    return len(segments) + 1
+    # Obtenemos la lista de targets correctos para cada punto de cursor
+    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # Contamos los targets únicos que fueron tocados correctamente (no None)
+    # Usamos una lista para evitar problemas con TMTTarget que no es hashable
+    touched_targets = []
+    for target, cursor_info in correct_touches:
+        if target is not None and target not in touched_targets:
+            touched_targets.append(target)
+
+    return len(touched_targets)
 
 
 def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:

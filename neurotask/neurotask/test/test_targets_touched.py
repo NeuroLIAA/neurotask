@@ -1,6 +1,7 @@
 from neurotask.tmt.metrics.targets_touched import (
     touched_targets_for_every_cursor_point,
-    correct_touched_targets_for_every_cursor_point
+    correct_touched_targets_for_every_cursor_point,
+    count_correctly_touched_targets
 )
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTTarget, CursorInfo, Coordinate, TrialType
 
@@ -479,4 +480,463 @@ class TestCorrectTouchedTargetsForEveryCursorPoint:
         result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
 
         assert len(result) == 0
+
+
+class TestCountCorrectlyTouchedTargets:
+    """Tests for count_correctly_touched_targets function"""
+
+    def test_all_targets_touched_correctly(self):
+        """
+        When all targets are touched in correct order,
+        the count should equal the number of targets.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch target 1
+            CursorInfo(Coordinate(20.0, 0.0), 2.0),  # Touch target 2
+            CursorInfo(Coordinate(30.0, 0.0), 3.0),  # Touch target 3
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_1",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 4
+
+    def test_partial_completion(self):
+        """
+        When only some targets are touched correctly,
+        count should reflect only the touched ones.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch target 1
+            CursorInfo(Coordinate(15.0, 0.0), 2.0),  # Stop here, don't reach 2 or 3
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_2",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count only targets 0 and 1
+        assert count == 2
+
+    def test_no_targets_touched(self):
+        """
+        When no targets are touched at all,
+        count should be 0.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(100.0, 100.0), 0.0),
+            CursorInfo(Coordinate(100.0, 101.0), 1.0),
+            CursorInfo(Coordinate(100.0, 102.0), 2.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_3",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 0
+
+    def test_only_first_target_touched(self):
+        """
+        When only the first target is touched,
+        count should be 1.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(5.0, 0.0), 1.0),   # Move away
+            CursorInfo(Coordinate(100.0, 0.0), 2.0), # Far away
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_4",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 1
+
+    def test_targets_touched_out_of_order(self):
+        """
+        When targets are touched out of order,
+        only those touched in correct sequence should count.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch target 2 (WRONG - skip 1)
+            CursorInfo(Coordinate(30.0, 0.0), 2.0),  # Touch target 3 (WRONG - still need 1)
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch target 1 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 4.0),  # Touch target 2 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_5",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count targets 0, 1, 2 (3 targets correctly touched in order)
+        assert count == 3
+
+    def test_multiple_touches_same_target(self):
+        """
+        When the same target is touched multiple times,
+        it should only count once.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(0.0, 0.0), 1.0),   # Touch target 0 again
+            CursorInfo(Coordinate(0.0, 0.0), 2.0),   # Touch target 0 again
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch target 1
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),  # Touch target 1 again
+            CursorInfo(Coordinate(20.0, 0.0), 5.0),  # Touch target 2
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_6",
+            order_of_appearance=1,
+            rt=5.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count 3 unique targets (0, 1, 2)
+        assert count == 3
+
+    def test_empty_cursor_trail(self):
+        """
+        When cursor trail is empty,
+        count should be 0.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+        ]
+
+        cursor_trail = []
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_7",
+            order_of_appearance=1,
+            rt=0.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 0
+
+    def test_single_target_trial(self):
+        """
+        When trial has only one target and it's touched,
+        count should be 1.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_8",
+            order_of_appearance=1,
+            rt=0.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 1
+
+    def test_with_custom_start(self):
+        """
+        When trial has custom start,
+        only targets touched after start should count.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(-100.0, 0.0), 0.0),  # Before start
+            CursorInfo(Coordinate(-50.0, 0.0), 1.0),   # Before start
+            CursorInfo(Coordinate(0.0, 0.0), 2.0),     # Start - touch target 0
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),    # Touch target 1
+            CursorInfo(Coordinate(20.0, 0.0), 4.0),    # Touch target 2
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_9",
+            order_of_appearance=1,
+            rt=2.0,
+            with_custom_start=True,
+            start=CursorInfo(Coordinate(0.0, 0.0), 2.0)
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count all 3 targets from the start point
+        assert count == 3
+
+    def test_large_radius_overlapping_targets(self):
+        """
+        When target radius is large and targets overlap,
+        the correct sequential touch should still be counted.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(5.0, 0.0)),
+            TMTTarget("2", Coordinate(10.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0 (and maybe 1)
+            CursorInfo(Coordinate(5.0, 0.0), 1.0),   # Touch target 1 (and maybe 0 and 2)
+            CursorInfo(Coordinate(10.0, 0.0), 2.0),  # Touch target 2 (and maybe 1)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_10",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 10.0  # Large radius to create overlap
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # All 3 targets should be counted as correctly touched in sequence
+        assert count == 3
+
+    def test_going_back_and_forth(self):
+        """
+        When cursor goes back and forth between targets,
+        only the first correct touch of each should count.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(5.0, 0.0), 1.0),   # Between
+            CursorInfo(Coordinate(0.0, 0.0), 2.0),   # Back to target 0
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch target 1
+            CursorInfo(Coordinate(5.0, 0.0), 4.0),   # Between
+            CursorInfo(Coordinate(0.0, 0.0), 5.0),   # Back to target 0
+            CursorInfo(Coordinate(10.0, 0.0), 6.0),  # Back to target 1
+            CursorInfo(Coordinate(20.0, 0.0), 7.0),  # Touch target 2
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_11",
+            order_of_appearance=1,
+            rt=7.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count 3 unique targets
+        assert count == 3
+
+    def test_two_target_trial(self):
+        """
+        Test with a simple two-target trial.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_12",
+            order_of_appearance=1,
+            rt=1.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        assert count == 2
+
+    def test_never_reaching_second_target(self):
+        """
+        When only first target is reached and cursor stays far from others.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch target 0
+            CursorInfo(Coordinate(3.0, 0.0), 1.0),   # Move away
+            CursorInfo(Coordinate(5.0, 0.0), 2.0),   # Still away
+            CursorInfo(Coordinate(7.0, 0.0), 3.0),   # Still away
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_13",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Only target 0 should be counted
+        assert count == 1
+
+    def test_alternating_correct_incorrect_touches(self):
+        """
+        When user alternates between correct and incorrect targets.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 1.0),  # Touch 3 (wrong - skip ahead)
+            CursorInfo(Coordinate(20.0, 0.0), 2.0),  # Touch 2 (wrong - still need 1)
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(0.0, 0.0), 4.0),   # Back to 0 (wrong - need 2)
+            CursorInfo(Coordinate(20.0, 0.0), 5.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 6.0),  # Touch 3 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_count_14",
+            order_of_appearance=1,
+            rt=6.0
+        )
+
+        target_radius = 1.0
+        count = count_correctly_touched_targets(trial, target_radius)
+
+        # Should count all 4 targets eventually touched in correct order
+        assert count == 4
+
+
 
