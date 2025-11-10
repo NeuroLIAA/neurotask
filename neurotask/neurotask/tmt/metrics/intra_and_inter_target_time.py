@@ -21,21 +21,21 @@ class TargetTime(BaseMetricCalculator):
 def get_intra_target_intervals(
         trial: TMTTrial,
         subject: TMTSubject
-) -> list[tuple[TMTTarget, float, float]]:
+) -> list[tuple[TMTTarget, CursorInfo, CursorInfo]]:
     """
     Identify continuous intervals where the cursor is on a correct target.
 
-    Returns a list of tuples (target, start_time, end_time) representing
+    Returns a list of tuples (target, start_cursor, end_cursor) representing
     continuous periods where the cursor is on the correct expected target.
 
     An interval starts when the cursor enters a correct target and ends when:
     - The cursor leaves the target (moves to a non-target position)
     - The cursor moves to a different correct target
-    - We reach the last cursor point (interval ends at that point's time)
+    - We reach the last cursor point (interval ends at that point)
 
     :param trial: TMTTrial instance
     :param subject: TMTSubject instance with target_radius
-    :return: List of (target, start_time, end_time) tuples
+    :return: List of (target, start_cursor, end_cursor) tuples
     """
     if not trial.cursor_trail:
         return []
@@ -48,7 +48,7 @@ def get_intra_target_intervals(
 
     intervals = []
     current_interval_target = None
-    current_interval_start = None
+    current_interval_start_cursor = None
 
     for i in range(len(correct_touches)):
         target, cursor_info = correct_touches[i]
@@ -58,28 +58,28 @@ def get_intra_target_intervals(
             if current_interval_target is None:
                 # Start a new interval
                 current_interval_target = target
-                current_interval_start = cursor_info.time
+                current_interval_start_cursor = cursor_info
             elif current_interval_target != target:
                 # Different target - close previous interval at current point and start new one
-                intervals.append((current_interval_target, current_interval_start, cursor_info.time))
+                intervals.append((current_interval_target, current_interval_start_cursor, cursor_info))
 
                 # Start new interval
                 current_interval_target = target
-                current_interval_start = cursor_info.time
+                current_interval_start_cursor = cursor_info
         else:
             # Not on a target - close current interval if exists
             if current_interval_target is not None:
                 # Close interval at current point (when we left the target)
-                intervals.append((current_interval_target, current_interval_start, cursor_info.time))
+                intervals.append((current_interval_target, current_interval_start_cursor, cursor_info))
 
                 current_interval_target = None
-                current_interval_start = None
+                current_interval_start_cursor = None
 
     # Close any open interval at the end
     if current_interval_target is not None:
-        # Use the last cursor time as end of interval
+        # Use the last cursor as end of interval
         last_cursor = correct_touches[-1][1]
-        intervals.append((current_interval_target, current_interval_start, last_cursor.time))
+        intervals.append((current_interval_target, current_interval_start_cursor, last_cursor))
 
     return intervals
 
@@ -103,7 +103,7 @@ def calculate_intra_target_time(
     intervals = get_intra_target_intervals(trial, subject)
 
     # Sum the duration of all intervals
-    total_time = sum(end_time - start_time for _, start_time, end_time in intervals)
+    total_time = sum(end_cursor.time - start_cursor.time for _, start_cursor, end_cursor in intervals)
 
     return total_time
 
