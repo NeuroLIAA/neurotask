@@ -23,7 +23,7 @@ class TestCalculateIntraTargetTime:
         :param tolerance: Tolerance for floating point comparisons
         """
         intra_time = calculate_intra_target_time(trial, subject)
-        inter_time = calculate_inter_target_time(trial, subject)
+        inter_time = calculate_inter_target_time(trial, intra_time)
 
         # Validate expected intra-target time
         assert abs(intra_time - expected_intra) < tolerance, \
