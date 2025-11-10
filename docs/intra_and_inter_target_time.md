@@ -146,8 +146,8 @@ from neurotask.tmt.metrics.intra_and_inter_target_time import (
 # Calcular intra-target time
 intra_time = calculate_intra_target_time(trial, subject)
 
-# Calcular inter-target time
-inter_time = calculate_inter_target_time(trial, subject)
+# Calcular inter-target time (requiere intra_time pre-calculado)
+inter_time = calculate_inter_target_time(trial, intra_time)
 
 # Obtener intervalos detallados
 intervals = get_intra_target_intervals(trial, subject)
@@ -162,7 +162,7 @@ subject = TMTSubject(target_radius=5.0, ...)
 
 # Calcular métricas
 intra = calculate_intra_target_time(trial, subject)
-inter = calculate_inter_target_time(trial, subject)
+inter = calculate_inter_target_time(trial, intra)
 total = trial.get_cursor_trail_from_start()[-1].time - trial.get_cursor_trail_from_start()[0].time
 
 # Calcular ratio
