@@ -151,7 +151,8 @@ inter_time = calculate_inter_target_time(trial, intra_time)
 
 # Obtener intervalos detallados
 intervals = get_intra_target_intervals(trial, subject)
-# Returns: [(target, start_time, end_time), ...]
+# Returns: [(target, start_cursor, end_cursor), ...]
+# donde start_cursor y end_cursor son objetos CursorInfo
 ```
 
 ### Ejemplo de Uso
