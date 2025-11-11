@@ -93,22 +93,13 @@ def cut_trial_at_minimum_correct_targets(
     if len(correct_intervals) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
-    # Get the target we're looking for (the Nth target based on correct_targets_minimum)
-    target_to_find = trial.stimuli[correct_targets_minimum - 1]
-
-    # Find the interval that contains this target
-    cutoff_segment = None
-    for interval in correct_intervals:
-        if interval[0] == target_to_find:
-            cutoff_segment = interval
-            break
-
-    # If we couldn't find the target, raise an error
-    if cutoff_segment is None:
-        raise ValueError(f"Could not find interval for target {target_to_find} in trial {trial.id}")
+    # Get the Nth interval (where N = correct_targets_minimum)
+    # Since correct_touched_targets_for_every_cursor_point ensures targets are touched in order,
+    # the Nth interval corresponds to the Nth target in trial.stimuli
+    cutoff_interval = correct_intervals[correct_targets_minimum - 1]
 
     # Use the start cursor (index 1) to cut when the target is first touched
-    cursor_info = cutoff_segment[1]
+    cursor_info = cutoff_interval[1]
 
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
 

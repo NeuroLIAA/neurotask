@@ -365,6 +365,7 @@ class TestCutTrialAtMinimumTargets:
         assert cut_trial == expected_trial
 
 
+
     def test_large_radius_overlapping_targets(self):
         """
         With large radius where targets overlap, should cut at first touch of correct target.
