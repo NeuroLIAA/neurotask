@@ -35,6 +35,19 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
     return trail_with_targets
 
 
+def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:
+    """
+    Returns the list of targets that are touched by the cursor at the given cursor_info.
+    """
+    targets = []
+    for target in trial.stimuli:
+        distance = calculate_distance(target.position, cursor_info.position)
+        if distance < target_radius:
+            targets.append(target)
+
+    return targets
+
+
 def correct_touched_targets_for_every_cursor_point(
         trial: TMTTrial,
         target_radius: float
@@ -100,19 +113,6 @@ def count_correctly_touched_targets(
             touched_targets.append(target)
 
     return len(touched_targets)
-
-
-def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:
-    """
-    Returns the list of targets that are touched by the cursor at the given cursor_info.
-    """
-    targets = []
-    for target in trial.stimuli:
-        distance = calculate_distance(target.position, cursor_info.position)
-        if distance < target_radius:
-            targets.append(target)
-
-    return targets
 
 
 def count_incorrect_touches(
