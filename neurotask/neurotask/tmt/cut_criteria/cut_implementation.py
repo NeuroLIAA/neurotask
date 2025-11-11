@@ -107,7 +107,8 @@ def cut_trial_at_minimum_correct_targets(
     if cutoff_segment is None:
         raise ValueError(f"Could not find interval for target {target_to_find} in trial {trial.id}")
 
-    cursor_info = cutoff_segment[2]
+    # Use the start cursor (index 1) to cut when the target is first touched
+    cursor_info = cutoff_segment[1]
 
     return cut_at_time(trial, cursor_info.time, correct_targets_minimum)
 
