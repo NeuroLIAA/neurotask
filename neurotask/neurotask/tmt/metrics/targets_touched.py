@@ -126,50 +126,41 @@ def count_incorrect_touches(
     # 1. Obtenemos la secuencia (touched_list, cursor_info)
     trail = touched_targets_for_every_cursor_point(trial, target_radius)
 
-    # 2. Inicializamos índices y estados
-    expected_idx = 0
+    stim_iter = iter(trial.stimuli)
+    expected = next(stim_iter, None)
     previous = None
-    expected = trial.stimuli[expected_idx]
+
     error_count = 0
-    prev_was_error = False
+    in_error = False  # true mientras permanezco en un “estado de error”
 
     # 3. Recorremos cada punto de cursor
     for touched_list, cursor_info in trail:
 
-        # 3.1 Si tocó el siguiente esperado → avanzamos, reseteamos prev_was_error
+        # 1) Acierto del esperado → avanzar estado y salir de error
         if expected in touched_list:
-            expected_idx += 1
             previous = expected
-            expected = (trial.stimuli[expected_idx]
-                        if expected_idx < len(trial.stimuli)
-                        else None)
-            prev_was_error = False
+            expected = next(stim_iter, None)
+            in_error = False
             continue
 
         # 3.2 Si no tocó ningún target → ignoramos
         if not touched_list:
-            prev_was_error = False
+            in_error = False
             continue
 
-        # 3.3 Chequeo de errores en este punto:
-        #     - Para cada t en touched_list:
-        #         * Obtenemos los targets que solapan con t
-        #         * Si alguno de ellos ES expected o ES previous → ¡no es error!
-        #     - Si ninguno cumple → es error (contamos sólo una vez por punto)
-        is_error = True
-        for t in touched_list:
-            # aquí necesitamos una función auxiliar overlap(t) → List[TMTTarget]
-            solapados = get_overlapping_targets(t, trial, target_radius)
-            if previous in solapados or expected in solapados:
-                is_error = False
-                break
+        # 3) ¿Algún toque se “salva” por solapar con previous o expected?
+        def overlaps_prev_or_expected(t):
+            overlapping = get_overlapping_targets(t, trial, target_radius)
+            return (previous in overlapping) or (expected in overlapping)
 
-        # 3.4 Contar el error sólo al “entrar” en un estado erróneo
-        if is_error and not prev_was_error:
+        actual_in_error = not any(overlaps_prev_or_expected(t) for t in touched_list)
+
+        # 4) Contar sólo al entrar en error
+        if actual_in_error and not in_error:
             error_count += 1
-            prev_was_error = True
-        elif not is_error:
-            prev_was_error = False
+            in_error = True
+        elif not actual_in_error:
+            in_error = False
 
     return error_count
 
