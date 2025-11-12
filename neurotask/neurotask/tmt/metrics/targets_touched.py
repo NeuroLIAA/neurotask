@@ -14,9 +14,7 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
-        wrong_touches_count, wrong_touches_points = count_incorrect_touches(trial, subject.target_radius)
-        metrics[self.get_metric_name('wrong_targets_touches')] = wrong_touches_count
-        metrics[self.get_metric_name('wrong_targets_points')] = wrong_touches_points
+        metrics[self.get_metric_name('wrong_targets_touches')] = count_incorrect_touches(trial, subject.target_radius)
 
         return metrics
 
@@ -117,15 +115,15 @@ def count_correctly_touched_targets(
     return len(touched_targets)
 
 
-def count_incorrect_touches(
+def get_incorrect_touches(
         trial: TMTTrial,
         target_radius: float
-) -> Tuple[int, List[CursorInfo]]:
+) -> List[CursorInfo]:
     """
-    Cuenta globalmente la cantidad de toques erróneos,
+    Identifica los puntos de cursor donde ocurren toques erróneos,
     siguiendo las reglas acordadas.
 
-    :return: tupla con (número de toques erróneos, lista de CursorInfo incorrectos)
+    :return: lista de CursorInfo incorrectos
     """
     # 1. Obtenemos la secuencia (touched_list, cursor_info)
     trail = touched_targets_for_every_cursor_point(trial, target_radius)
@@ -134,7 +132,6 @@ def count_incorrect_touches(
     expected = next(stim_iter, None)
     previous = None
 
-    error_count = 0
     incorrect_points: List[CursorInfo] = []
     in_error = False  # true mientras permanezco en un "estado de error"
 
@@ -160,15 +157,28 @@ def count_incorrect_touches(
 
         actual_in_error = not any(overlaps_prev_or_expected(t) for t in touched_list)
 
-        # 4) Contar sólo al entrar en error
+        # 4) Añadir solo al entrar en error
         if actual_in_error and not in_error:
-            error_count += 1
             incorrect_points.append(cursor_info)
             in_error = True
         elif not actual_in_error:
             in_error = False
 
-    return error_count, incorrect_points
+    return incorrect_points
+
+
+def count_incorrect_touches(
+        trial: TMTTrial,
+        target_radius: float
+) -> int:
+    """
+    Cuenta globalmente la cantidad de toques erróneos,
+    siguiendo las reglas acordadas.
+
+    :return: número de toques erróneos
+    """
+    incorrect_points = get_incorrect_touches(trial, target_radius)
+    return len(incorrect_points)
 
 
 def get_overlapping_targets(
