@@ -1,7 +1,8 @@
 from neurotask.tmt.metrics.targets_touched import (
     touched_targets_for_every_cursor_point,
     correct_touched_targets_for_every_cursor_point,
-    count_correctly_touched_targets
+    count_correctly_touched_targets,
+    count_incorrect_touches
 )
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTTarget, CursorInfo, Coordinate, TrialType
 
@@ -770,4 +771,491 @@ class TestTargetTouchFunctions:
         # Test count_correctly_touched_targets
         count = count_correctly_touched_targets(trial, target_radius)
         assert count == 2
+
+
+class TestCountIncorrectTouches:
+    """
+    Tests for count_incorrect_touches function.
+    This function counts the number of incorrect target touches following specific rules:
+    - An incorrect touch is when a target is touched that is not the expected one
+    - Consecutive incorrect touches count as one error (state-based counting)
+    - Touches on overlapping targets with the expected/previous target don't count as errors
+    """
+
+    def test_no_incorrect_touches_perfect_sequence(self):
+        """
+        When all targets are touched in perfect order, there should be no errors.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 2.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 3.0),  # Touch 3 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_1",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 0, f"Expected 0 errors, got {error_count}"
+
+    def test_no_incorrect_touches_no_targets_hit(self):
+        """
+        When no targets are touched (cursor stays away), there should be no errors.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(100.0, 100.0), 0.0),
+            CursorInfo(Coordinate(100.0, 101.0), 1.0),
+            CursorInfo(Coordinate(100.0, 102.0), 2.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_2",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 0, f"Expected 0 errors, got {error_count}"
+
+    def test_one_incorrect_touch_skip_target(self):
+        """
+        When skipping a target (0 -> 2 instead of 0 -> 1 -> 2), should count as 1 error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG - skip 1)
+            CursorInfo(Coordinate(10.0, 0.0), 2.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),  # Touch 2 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_3",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error, got {error_count}"
+
+    def test_consecutive_incorrect_touches_count_as_one(self):
+        """
+        When touching multiple wrong targets consecutively, it should count as 1 error
+        (entering error state once).
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG)
+            CursorInfo(Coordinate(30.0, 0.0), 2.0),  # Touch 3 (WRONG - still in error)
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch 1 (correct - exit error)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_4",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (consecutive wrongs count as one), got {error_count}"
+
+    def test_multiple_separate_incorrect_touches(self):
+        """
+        Multiple separate error episodes should each count as 1 error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG - error 1)
+            CursorInfo(Coordinate(10.0, 0.0), 2.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 3.0),  # Touch 3 (WRONG - error 2)
+            CursorInfo(Coordinate(20.0, 0.0), 4.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 5.0),  # Touch 3 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_5",
+            order_of_appearance=1,
+            rt=5.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 2, f"Expected 2 separate errors, got {error_count}"
+
+    def test_touching_no_target_resets_error_state(self):
+        """
+        When touching no target after an error, the error state should reset.
+        Next incorrect touch should count as a new error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG - error 1)
+            CursorInfo(Coordinate(50.0, 0.0), 2.0),  # Touch nothing (reset error state)
+            CursorInfo(Coordinate(30.0, 0.0), 3.0),  # Touch 3 (WRONG - error 2)
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),  # Touch 1 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_6",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 2, f"Expected 2 errors (reset by empty touch), got {error_count}"
+
+    def test_overlapping_targets_dont_count_as_error(self):
+        """
+        When touching a target that overlaps with the expected target,
+        it should not count as an error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(3.0, 0.0)),    # Overlaps with 0 (distance = 3, radius = 2 each)
+            TMTTarget("2", Coordinate(10.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(2.5, 0.0), 1.0),   # Touch 1 (overlaps with 0, should not error)
+            CursorInfo(Coordinate(3.0, 0.0), 2.0),   # Touch 1 (correct)
+            CursorInfo(Coordinate(10.0, 0.0), 3.0),  # Touch 2 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_7",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 2.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 0, f"Expected 0 errors (overlapping targets), got {error_count}"
+
+    def test_overlapping_with_previous_target_dont_count(self):
+        """
+        When touching a target that overlaps with the previous (just touched) target,
+        it should not count as an error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(13.0, 0.0)),   # Overlaps with 1 (distance = 3, radius = 2 each)
+            TMTTarget("3", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(11.5, 0.0), 2.0),  # Touch 2 (overlaps with previous 1, should not error)
+            CursorInfo(Coordinate(13.0, 0.0), 3.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 4.0),  # Touch 3 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_8",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        target_radius = 2.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 0, f"Expected 0 errors (overlapping with previous), got {error_count}"
+
+    def test_wrong_target_not_overlapping_counts_as_error(self):
+        """
+        When touching a wrong target that doesn't overlap with expected or previous,
+        it should count as an error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),   # Does not overlap with 1
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 2.0),  # Touch 3 (WRONG - doesn't overlap, error 1)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),  # Touch 2 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_9",
+            order_of_appearance=1,
+            rt=3.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (non-overlapping wrong target), got {error_count}"
+
+    def test_empty_cursor_trail(self):
+        """
+        When there is no cursor trail, there should be no errors.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+        ]
+
+        cursor_trail = []
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_10",
+            order_of_appearance=1,
+            rt=0.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 0, f"Expected 0 errors (empty trail), got {error_count}"
+
+    def test_complex_sequence_with_multiple_error_episodes(self):
+        """
+        Complex scenario with multiple error episodes and corrections.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+            TMTTarget("4", Coordinate(40.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 1.0),  # Touch 3 (WRONG - error 1)
+            CursorInfo(Coordinate(40.0, 0.0), 2.0),  # Touch 4 (WRONG - still error 1)
+            CursorInfo(Coordinate(5.0, 0.0), 3.0),   # Touch nothing (reset)
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),  # Touch 1 (correct)
+            CursorInfo(Coordinate(30.0, 0.0), 5.0),  # Touch 3 (WRONG - error 2)
+            CursorInfo(Coordinate(20.0, 0.0), 6.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(40.0, 0.0), 7.0),  # Touch 4 (WRONG - error 3)
+            CursorInfo(Coordinate(30.0, 0.0), 8.0),  # Touch 3 (correct)
+            CursorInfo(Coordinate(40.0, 0.0), 9.0),  # Touch 4 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_11",
+            order_of_appearance=1,
+            rt=9.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 3, f"Expected 3 errors (complex sequence), got {error_count}"
+
+    def test_staying_on_wrong_target_multiple_points(self):
+        """
+        When staying on a wrong target for multiple cursor points,
+        it should count as only 1 error (entering error state once).
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG - error 1)
+            CursorInfo(Coordinate(20.0, 0.0), 2.0),  # Still on 2 (still error 1)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),  # Still on 2 (still error 1)
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),  # Touch 1 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_12",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (staying on wrong target), got {error_count}"
+
+    def test_back_and_forth_between_wrong_targets(self):
+        """
+        When moving back and forth between wrong targets without leaving error state,
+        it should count as 1 error.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(30.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 1.0),  # Touch 2 (WRONG - error 1)
+            CursorInfo(Coordinate(30.0, 0.0), 2.0),  # Touch 3 (WRONG - still error 1)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),  # Touch 2 (WRONG - still error 1)
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),  # Touch 1 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_13",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (back and forth wrong targets), got {error_count}"
+
+    def test_with_custom_start(self):
+        """
+        Test with custom start point - should work correctly.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(-100.0, 0.0), 0.0),  # Before start (ignored)
+            CursorInfo(Coordinate(-50.0, 0.0), 1.0),   # Before start (ignored)
+            CursorInfo(Coordinate(0.0, 0.0), 2.0),     # Start - touch 0 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),    # Touch 2 (WRONG - error 1)
+            CursorInfo(Coordinate(10.0, 0.0), 4.0),    # Touch 1 (correct)
+            CursorInfo(Coordinate(20.0, 0.0), 5.0),    # Touch 2 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_14",
+            order_of_appearance=1,
+            rt=3.0,
+            with_custom_start=True,
+            start=CursorInfo(Coordinate(0.0, 0.0), 2.0)
+        )
+
+        target_radius = 1.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (with custom start), got {error_count}"
+
+    def test_touching_multiple_wrong_targets_simultaneously(self):
+        """
+        When cursor position touches multiple wrong targets at once,
+        it should count as entering error state once.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),
+            TMTTarget("2", Coordinate(25.0, 0.0)),   # Far from 1, won't overlap
+            TMTTarget("3", Coordinate(30.0, 0.0)),   # Close to 2
+        ]
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
+            CursorInfo(Coordinate(27.5, 0.0), 1.0),  # Touch both 2 and 3 (WRONG - error 1)
+            CursorInfo(Coordinate(10.0, 0.0), 2.0),  # Touch 1 (correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_incorrect_15",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 3.0
+        error_count = count_incorrect_touches(trial, target_radius)
+        assert error_count == 1, f"Expected 1 error (multiple simultaneous wrong), got {error_count}"
 
