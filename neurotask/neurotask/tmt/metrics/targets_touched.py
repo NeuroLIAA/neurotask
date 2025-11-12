@@ -127,8 +127,8 @@ def count_incorrect_touches(
     trail = touched_targets_for_every_cursor_point(trial, target_radius)
 
     # 2. Inicializamos índices y estados
-    expected_idx = 1
-    previous = trial.stimuli[0]
+    expected_idx = 0
+    previous = None
     expected = trial.stimuli[expected_idx]
     error_count = 0
     prev_was_error = False
