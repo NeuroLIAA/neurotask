@@ -14,7 +14,9 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
-        metrics[self.get_metric_name('wrong_targets_touches')] = count_incorrect_touches(trial, subject.target_radius)
+        wrong_touches_count, wrong_touches_points = count_incorrect_touches(trial, subject.target_radius)
+        metrics[self.get_metric_name('wrong_targets_touches')] = wrong_touches_count
+        metrics[self.get_metric_name('wrong_targets_points')] = wrong_touches_points
 
         return metrics
 
@@ -118,10 +120,12 @@ def count_correctly_touched_targets(
 def count_incorrect_touches(
         trial: TMTTrial,
         target_radius: float
-) -> int:
+) -> Tuple[int, List[CursorInfo]]:
     """
     Cuenta globalmente la cantidad de toques erróneos,
     siguiendo las reglas acordadas.
+
+    :return: tupla con (número de toques erróneos, lista de CursorInfo incorrectos)
     """
     # 1. Obtenemos la secuencia (touched_list, cursor_info)
     trail = touched_targets_for_every_cursor_point(trial, target_radius)
@@ -131,7 +135,8 @@ def count_incorrect_touches(
     previous = None
 
     error_count = 0
-    in_error = False  # true mientras permanezco en un “estado de error”
+    incorrect_points: List[CursorInfo] = []
+    in_error = False  # true mientras permanezco en un "estado de error"
 
     # 3. Recorremos cada punto de cursor
     for touched_list, cursor_info in trail:
@@ -148,7 +153,7 @@ def count_incorrect_touches(
             in_error = False
             continue
 
-        # 3) ¿Algún toque se “salva” por solapar con previous o expected?
+        # 3) ¿Algún toque se "salva" por solapar con previous or expected?
         def overlaps_prev_or_expected(t):
             overlapping = get_overlapping_targets(t, trial, target_radius)
             return (previous in overlapping) or (expected in overlapping)
@@ -158,11 +163,12 @@ def count_incorrect_touches(
         # 4) Contar sólo al entrar en error
         if actual_in_error and not in_error:
             error_count += 1
+            incorrect_points.append(cursor_info)
             in_error = True
         elif not actual_in_error:
             in_error = False
 
-    return error_count
+    return error_count, incorrect_points
 
 
 def get_overlapping_targets(

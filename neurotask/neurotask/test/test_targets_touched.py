@@ -810,7 +810,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 0, f"Expected 0 errors, got {error_count}"
 
     def test_no_incorrect_touches_no_targets_hit(self):
@@ -839,7 +839,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 0, f"Expected 0 errors, got {error_count}"
 
     def test_one_incorrect_touch_skip_target(self):
@@ -870,7 +870,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error, got {error_count}"
 
     def test_consecutive_incorrect_touches_count_as_one(self):
@@ -902,7 +902,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (consecutive wrongs count as one), got {error_count}"
 
     def test_multiple_separate_incorrect_touches(self):
@@ -935,7 +935,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 2, f"Expected 2 separate errors, got {error_count}"
 
     def test_touching_no_target_resets_error_state(self):
@@ -968,7 +968,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 2, f"Expected 2 errors (reset by empty touch), got {error_count}"
 
     def test_overlapping_targets_dont_count_as_error(self):
@@ -999,7 +999,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 2.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 0, f"Expected 0 errors (overlapping targets), got {error_count}"
 
     def test_overlapping_with_previous_target_dont_count(self):
@@ -1033,7 +1033,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 2.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 0, f"Expected 0 errors (overlapping with previous), got {error_count}"
 
     def test_wrong_target_not_overlapping_counts_as_error(self):
@@ -1065,7 +1065,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (non-overlapping wrong target), got {error_count}"
 
     def test_empty_cursor_trail(self):
@@ -1089,7 +1089,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 0, f"Expected 0 errors (empty trail), got {error_count}"
 
     def test_complex_sequence_with_multiple_error_episodes(self):
@@ -1127,7 +1127,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 3, f"Expected 3 errors (complex sequence), got {error_count}"
 
     def test_staying_on_wrong_target_multiple_points(self):
@@ -1159,7 +1159,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (staying on wrong target), got {error_count}"
 
     def test_back_and_forth_between_wrong_targets(self):
@@ -1192,7 +1192,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (back and forth wrong targets), got {error_count}"
 
     def test_with_custom_start(self):
@@ -1226,7 +1226,7 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 1.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (with custom start), got {error_count}"
 
     def test_touching_multiple_wrong_targets_simultaneously(self):
@@ -1257,6 +1257,6 @@ class TestCountIncorrectTouches:
         )
 
         target_radius = 3.0
-        error_count = count_incorrect_touches(trial, target_radius)
+        error_count, _ = count_incorrect_touches(trial, target_radius)
         assert error_count == 1, f"Expected 1 error (multiple simultaneous wrong), got {error_count}"
 
