@@ -1010,16 +1010,17 @@ class TestCountIncorrectTouches:
         stimuli = [
             TMTTarget("0", Coordinate(0.0, 0.0)),
             TMTTarget("1", Coordinate(10.0, 0.0)),
-            TMTTarget("2", Coordinate(13.0, 0.0)),   # Overlaps with 1 (distance = 3, radius = 2 each)
-            TMTTarget("3", Coordinate(20.0, 0.0)),
+            TMTTarget("2", Coordinate(20.0, 0.0)),
+            TMTTarget("3", Coordinate(13.0, 0.0)),# Overlaps with 1 (distance = 3, radius = 2 each)
         ]
 
         cursor_trail = [
             CursorInfo(Coordinate(0.0, 0.0), 0.0),   # Touch 0 (correct)
             CursorInfo(Coordinate(10.0, 0.0), 1.0),  # Touch 1 (correct)
-            CursorInfo(Coordinate(11.5, 0.0), 2.0),  # Touch 2 (overlaps with previous 1, should not error)
-            CursorInfo(Coordinate(13.0, 0.0), 3.0),  # Touch 2 (correct)
-            CursorInfo(Coordinate(20.0, 0.0), 4.0),  # Touch 3 (correct)
+            CursorInfo(Coordinate(11.5, 0.0), 2.0),  # Touch 3 (overlaps with previous 1, should not error)
+            CursorInfo(Coordinate(15.0, 0.0), 2.0),  # Touch nothing (reset)
+            CursorInfo(Coordinate(20.0, 0.0), 3.0),  # Touch 2 (correct)
+            CursorInfo(Coordinate(13.0, 0.0), 4.0),  # Touch 3 (correct)
         ]
 
         trial = TMTTrial(
