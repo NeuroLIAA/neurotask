@@ -15,8 +15,6 @@ class ZigZagAmplitude(BaseMetricCalculator):
             metrics[self.get_metric_name('zigzag_amplitude')] = np.nan
             return metrics
 
-        target_radius = subject.target_radius
-
         time_differences = []
         # Recorremos pares [número, letra]
         for i in range(0, len(correct_intervals) - 1, 2):

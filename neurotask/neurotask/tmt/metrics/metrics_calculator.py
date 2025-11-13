@@ -12,7 +12,7 @@ from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, get_target_intervals, \
+from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, get_all_intervals_between_targets, \
     count_correctly_touched_targets
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial
@@ -56,7 +56,8 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                 rows.append(
                     create_invalid_trial_row(
                         subject, subject_id, trial, speed_threshold,
-                        invalid_cause=InvalidCause.INVALID_MODEL
+                        invalid_cause=InvalidCause.INVALID_MODEL,
+                        error_msg="Trial is_valid function return false."
                     )
                 )
                 continue
@@ -65,7 +66,8 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             rows.append(
                 create_invalid_trial_row(
                     subject, subject_id, trial, speed_threshold,
-                    invalid_cause=InvalidCause.UNABLE_TO_DETERMINE_START
+                    invalid_cause=InvalidCause.UNABLE_TO_DETERMINE_START,
+                    error_msg=str(e)
                 )
             )
             continue
@@ -96,7 +98,8 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                     rows.append(
                         create_invalid_trial_row(
                             subject, subject_id, trial, speed_threshold,
-                            invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM
+                            invalid_cause=InvalidCause.UNDER_CORRECT_TARGETS_MINIMUM,
+                            error_msg="Not enough correct target touches"
                         )
                     )
                     continue
@@ -115,11 +118,14 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             rows.append(valid_row)
 
         except Exception as e:
+            print(f"ERROR: Trial {trial.id} for subject {subject_id}: {e}")
+            error_msg = str(e)
             logging.exception(f"Error processing trial {trial.id} for subject {subject_id}: {e}")
             rows.append(
                 create_invalid_trial_row(
                     subject, subject_id, trial, speed_threshold,
-                    invalid_cause=InvalidCause.UNKNOWN_ERROR
+                    invalid_cause=InvalidCause.UNKNOWN_ERROR,
+                    error_msg=error_msg
                 )
             )
 
@@ -204,23 +210,27 @@ def _attempt_cut_trial(
         rows.append(
             create_invalid_trial_row(
                 subject, subject_id, trial, speed_threshold,
-                invalid_cause=InvalidCause.CUT_CRITERIA_ERROR
+                invalid_cause=InvalidCause.CUT_CRITERIA_ERROR,
+                error_msg=str(e)
             )
         )
         return None
 
 
 def general_trial_info(speed_threshold, subject, subject_id, trial):
+
     trial_row = {
         "subject_id": subject_id,
         "trial_id": trial.id,
         "trial_type": trial.trial_type.name,
-        "age": subject.age(),
-        "gender": subject.personal_info.gender,
         "is_valid": trial.is_valid(),
         "trial_order_of_appearance": trial.order_of_appearance,
         "speed_threshold": speed_threshold
     }
+
+    session_data: Dict[str, str] = subject.session_data if subject.session_data else {}
+    trial_row.update(session_data)
+
     return trial_row
 
 
@@ -229,7 +239,8 @@ def create_invalid_trial_row(
         subject_id: str,
         trial: TMTTrial,
         speed_threshold: float,
-        invalid_cause: InvalidCause
+        invalid_cause: InvalidCause,
+        error_msg: Optional[str] = None
 ) -> Dict[str, Any]:
     if invalid_cause == InvalidCause.INVALID_MODEL:
         if not trial.is_valid_start_configuration():
@@ -237,11 +248,9 @@ def create_invalid_trial_row(
         elif not trial.is_valid_length():
             invalid_cause = InvalidCause.INVALID_LENGTH
 
-    return {
+    invalid_trial_row = {
         "subject_id": subject_id,
         "trial_id": trial.id,
-        "age": subject.age(),
-        "gender": subject.personal_info.gender,
         "total_distance": 0,
         "rt": trial.rt,
         "is_valid": False,
@@ -261,6 +270,14 @@ def create_invalid_trial_row(
         "invalid_cause": invalid_cause.name
     }
 
+    session_data: Dict[str, str] = subject.session_data if subject.session_data else {}
+    invalid_trial_row.update(session_data)
+
+    if error_msg:
+        invalid_trial_row["error_message"] = error_msg
+
+    return invalid_trial_row
+
 
 def compute_trial_metrics(
         metric_calculators: List[BaseMetricCalculator],
@@ -278,7 +295,7 @@ def compute_trial_metrics(
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
         get_all_trails_between_targets(trial, subject.target_radius)
     )
-    correct_intervals = get_target_intervals(trial, subject.target_radius)
+    correct_intervals = get_all_intervals_between_targets(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,

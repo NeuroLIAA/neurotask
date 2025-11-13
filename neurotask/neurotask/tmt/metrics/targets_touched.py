@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from .distance_calculation import calculate_distance
@@ -33,6 +33,172 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
         trail_with_targets.append((touched_target_list, cursor_info))
 
     return trail_with_targets
+
+
+def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:
+    """
+    Returns the list of targets that are touched by the cursor at the given cursor_info.
+    """
+    targets = []
+    for target in trial.stimuli:
+        distance = calculate_distance(target.position, cursor_info.position)
+        if distance < target_radius:
+            targets.append(target)
+
+    return targets
+
+
+def correct_touched_targets_for_every_cursor_point(
+        trial: TMTTrial,
+        target_radius: float
+) -> List[Tuple[Optional[TMTTarget], CursorInfo]]:
+    """
+    Returns a list of tuples for each cursor point, where each tuple contains:
+      - The correct target if the expected target is touched at that point (None otherwise)
+      - The cursor info
+
+    A target is considered "correct" if it's the next expected target in the sequence.
+    Once a target is correctly touched, the next target in trial.stimuli becomes expected.
+
+    :param trial: instancia de TMTTrial
+    :param target_radius: radio para detección de toques
+    :return: lista de (Optional[TMTTarget], CursorInfo) para cada punto de cursor
+    """
+    # Get all touched targets for every cursor point
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # Result list
+    result: List[Tuple[Optional[TMTTarget], CursorInfo]] = []
+
+    expected_idx = 0
+
+    for touched_list, cursor_info in trail_with_targets:
+        # Check if we've already touched all targets
+        if expected_idx >= len(trial.stimuli):
+            result.append((None, cursor_info))
+            continue
+
+        expected = trial.stimuli[expected_idx]
+
+        # Check if the expected target is in the touched list
+        if expected in touched_list:
+            result.append((expected, cursor_info))
+            expected_idx += 1
+        else:
+            result.append((None, cursor_info))
+
+    return result
+
+
+def count_correctly_touched_targets(
+        trial: TMTTrial,
+        target_radius: float
+) -> int:
+    """
+    Calcula cuántos targets de 'trial.stimuli' fueron efectivamente tocados
+    (en el orden esperado) dentro del radio dado.
+
+    :param trial:       instancia de TMTTrial con su lista de estímulos.
+    :param target_radius: radio para detección de toques.
+    :return: número de targets tocados correctamente.
+    """
+    # Obtenemos la lista de targets correctos para cada punto de cursor
+    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+
+    # Contamos los targets únicos que fueron tocados correctamente (no None)
+    # Usamos una lista para evitar problemas con TMTTarget que no es hashable
+    touched_targets = []
+    for target, cursor_info in correct_touches:
+        if target is not None and target not in touched_targets:
+            touched_targets.append(target)
+
+    return len(touched_targets)
+
+
+def get_incorrect_touches(
+        trial: TMTTrial,
+        target_radius: float
+) -> List[CursorInfo]:
+    """
+    Identifica los puntos de cursor donde ocurren toques erróneos,
+    siguiendo las reglas acordadas.
+
+    :return: lista de CursorInfo incorrectos
+    """
+    # 1. Obtenemos la secuencia (touched_list, cursor_info)
+    trail = touched_targets_for_every_cursor_point(trial, target_radius)
+
+    stim_iter = iter(trial.stimuli)
+    expected = next(stim_iter, None)
+    previous = None
+
+    incorrect_points: List[CursorInfo] = []
+    in_error = False  # true mientras permanezco en un "estado de error"
+
+    # 3. Recorremos cada punto de cursor
+    for touched_list, cursor_info in trail:
+
+        # 1) Acierto del esperado → avanzar estado y salir de error
+        if expected in touched_list:
+            previous = expected
+            expected = next(stim_iter, None)
+            in_error = False
+            continue
+
+        # 3.2 Si no tocó ningún target → ignoramos
+        if not touched_list:
+            in_error = False
+            continue
+
+        # 3) ¿Algún toque se "salva" por solapar con previous or expected?
+        def overlaps_prev_or_expected(t):
+            overlapping = get_overlapping_targets(t, trial, target_radius)
+            return (previous in overlapping) or (expected in overlapping)
+
+        actual_in_error = not any(overlaps_prev_or_expected(t) for t in touched_list)
+
+        # 4) Añadir solo al entrar en error
+        if actual_in_error and not in_error:
+            incorrect_points.append(cursor_info)
+            in_error = True
+        elif not actual_in_error:
+            in_error = False
+
+    return incorrect_points
+
+
+def count_incorrect_touches(
+        trial: TMTTrial,
+        target_radius: float
+) -> int:
+    """
+    Cuenta globalmente la cantidad de toques erróneos,
+    siguiendo las reglas acordadas.
+
+    :return: número de toques erróneos
+    """
+    incorrect_points = get_incorrect_touches(trial, target_radius)
+    return len(incorrect_points)
+
+
+def get_overlapping_targets(
+        target: TMTTarget,
+        trial: TMTTrial,
+        target_radius: float
+) -> List[TMTTarget]:
+    """
+    Recorre todos los targets en `trial.stimuli` y devuelve la lista de
+    aquellos que geométricamente solapan con `target`, considerando
+    que dos targets solapan si la distancia entre sus centros es
+    menor o igual a 2 * target_radius.
+    """
+    overlapping: List[TMTTarget] = []
+    for t in trial.stimuli:
+        # calculamos la distancia entre los centros
+        dist = calculate_distance(target.position, t.position)
+        if dist <= 2 * target_radius:
+            overlapping.append(t)
+    return overlapping
 
 
 def get_all_trails_between_targets(
@@ -79,41 +245,7 @@ def get_all_trails_between_targets(
     return segments
 
 
-def count_correctly_touched_targets(
-        trial: TMTTrial,
-        target_radius: float
-) -> int:
-    """
-    Calcula cuántos targets de 'trial.stimuli' fueron efectivamente tocados
-    (en el orden esperado) dentro del radio dado.
-
-    :param trial:       instancia de TMTTrial con su lista de estímulos.
-    :param target_radius: radio para detección de toques.
-    :return: número de targets tocados correctamente.
-    """
-    # Obtenemos todos los segmentos hasta el contacto de cada target esperado
-    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = get_all_trails_between_targets(
-        trial,
-        target_radius
-    )
-    # La cantidad de segmentos coincide con la cantidad de targets tocados
-    return len(segments) + 1
-
-
-def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:
-    """
-    Returns the list of targets that are touched by the cursor at the given cursor_info.
-    """
-    targets = []
-    for target in trial.stimuli:
-        distance = calculate_distance(target.position, cursor_info.position)
-        if distance < target_radius:
-            targets.append(target)
-
-    return targets
-
-
-def get_target_intervals(
+def get_all_intervals_between_targets(
         trial: TMTTrial,
         target_radius: float
 ) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
@@ -141,87 +273,3 @@ def get_target_intervals(
         intervals.append((target, start_info, end_info))
 
     return intervals
-
-
-
-# INCORRECT TARGETS Touched
-
-
-def count_incorrect_touches(
-    trial: TMTTrial,
-    target_radius: float
-) -> int:
-    """
-    Cuenta globalmente la cantidad de toques erróneos,
-    siguiendo las reglas acordadas.
-    """
-    # 1. Obtenemos la secuencia (touched_list, cursor_info)
-    trail = touched_targets_for_every_cursor_point(trial, target_radius)
-
-    # 2. Inicializamos índices y estados
-    expected_idx = 1
-    previous = trial.stimuli[0]
-    expected = trial.stimuli[expected_idx]
-    error_count = 0
-    prev_was_error = False
-
-    # 3. Recorremos cada punto de cursor
-    for touched_list, cursor_info in trail:
-
-        # 3.1 Si tocó el siguiente esperado → avanzamos, reseteamos prev_was_error
-        if expected in touched_list:
-            expected_idx += 1
-            previous = expected
-            expected = (trial.stimuli[expected_idx]
-                        if expected_idx < len(trial.stimuli)
-                        else None)
-            prev_was_error = False
-            continue
-
-        # 3.2 Si no tocó ningún target → ignoramos
-        if not touched_list:
-            prev_was_error = False
-            continue
-
-        # 3.3 Chequeo de errores en este punto:
-        #     - Para cada t en touched_list:
-        #         * Obtenemos los targets que solapan con t
-        #         * Si alguno de ellos ES expected o ES previous → ¡no es error!
-        #     - Si ninguno cumple → es error (contamos sólo una vez por punto)
-        is_error = True
-        for t in touched_list:
-            # aquí necesitamos una función auxiliar overlap(t) → List[TMTTarget]
-            solapados = get_overlapping_targets(t, trial, target_radius)
-            if previous in solapados or expected in solapados:
-                is_error = False
-                break
-
-        # 3.4 Contar el error sólo al “entrar” en un estado erróneo
-        if is_error and not prev_was_error:
-            error_count += 1
-            prev_was_error = True
-        elif not is_error:
-            prev_was_error = False
-
-    return error_count
-
-
-
-def get_overlapping_targets(
-    target: TMTTarget,
-    trial: TMTTrial,
-    target_radius: float
-) -> List[TMTTarget]:
-    """
-    Recorre todos los targets en `trial.stimuli` y devuelve la lista de
-    aquellos que geométricamente solapan con `target`, considerando
-    que dos targets solapan si la distancia entre sus centros es
-    menor o igual a 2 * target_radius.
-    """
-    overlapping: List[TMTTarget] = []
-    for t in trial.stimuli:
-        # calculamos la distancia entre los centros
-        dist = calculate_distance(target.position, t.position)
-        if dist <= 2 * target_radius:
-            overlapping.append(t)
-    return overlapping

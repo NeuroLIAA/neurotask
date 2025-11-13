@@ -1,8 +1,5 @@
-from typing import List
-
-import numpy as np
-
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
+from neurotask.tmt.metrics.targets_touched import correct_touched_targets_for_every_cursor_point
 from neurotask.tmt.model.tmt_model import TMTTrial, TMTSubject, TMTTarget, CursorInfo
 
 
@@ -14,58 +11,133 @@ class TargetTime(BaseMetricCalculator):
         if subject is None:
             raise ValueError("Subject must be provided")
 
-        # Calculate time inside the targets
-        # 3. Para cada segmento, calcular el tiempo dentro del target
-        intra_times = []
-        for target, start_ci, end_ci in correct_intervals:
-            # end_ci.time es el instante en que deja de tocar
-            # start_ci.time es el instante en que comienza a tocar
-            dwell_time = end_ci.time - start_ci.time
-            intra_times.append(dwell_time)
-
-        # 4. Media de los tiempos, o NaN si no hay segmentos
-        metrics[self.get_metric_name('intra_target_time')] = float(np.mean(intra_times))
-
-        total_dwell = float(np.sum(intra_times))
-
-        inter_time = self.calculate_inter_time(correct_intervals, total_dwell, trial)
-        metrics[self.get_metric_name('inter_target_time')] = inter_time
+        intra_time = calculate_intra_target_time(trial, subject)
+        metrics['intra_target_time'] = intra_time
+        metrics['inter_target_time'] = calculate_inter_target_time(trial, intra_time)
 
         return metrics
 
-    def calculate_inter_time(self, correct_segments, total_dwell, trial):
 
-        finish_time = trial.get_cursor_trail_from_start()[-1].time
-        total_time = finish_time - trial.start.time
+def get_intra_target_intervals(
+        trial: TMTTrial,
+        subject: TMTSubject
+) -> list[tuple[TMTTarget, CursorInfo, CursorInfo]]:
+    """
+    Identify continuous intervals where the cursor is on a correct target.
 
-        inter_time = total_time - total_dwell
+    Returns a list of tuples (target, start_cursor, end_cursor) representing
+    continuous periods where the cursor is on the correct expected target.
 
-        inter_time = float(inter_time)
+    An interval starts when the cursor enters a correct target and ends when:
+    - The cursor leaves the target (moves to a non-target position)
+    - The cursor moves to a different correct target
+    - We reach the last cursor point (interval ends at that point)
 
-        self.validate_inter_time(correct_segments, inter_time, finish_time)
+    :param trial: TMTTrial instance
+    :param subject: TMTSubject instance with target_radius
+    :return: List of (target, start_cursor, end_cursor) tuples
+    """
+    if not trial.cursor_trail:
+        return []
 
-        return inter_time
+    # Get correct touched targets for every cursor point
+    correct_touches = correct_touched_targets_for_every_cursor_point(trial, subject.target_radius)
 
-    # Esta validacion solo esta por si acaso
-    # Nunca deberia fallar, ambas metodologias deberian dar el mismo resultado
-    def validate_inter_time(self, correct_segments, inter_time, finish_time):
+    if not correct_touches:
+        return []
 
-        gaps: List[float] = []
-        for prev_seg, next_seg in zip(correct_segments[:-1], correct_segments[1:]):
-            _, _, prev_end_ci = prev_seg
-            _, next_start_ci, _ = next_seg
-            gap = next_start_ci.time - prev_end_ci.time
-            if gap > 0:
-                gaps.append(gap)
+    intervals = []
+    current_interval_target = None
+    current_interval_start_cursor = None
 
-        #add last gap until finish time
-        last_gap = finish_time - correct_segments[-1][2].time
-        if last_gap > 0:
-            gaps.append(last_gap)
-        # Calculate the alternative inter_time
+    for i in range(len(correct_touches)):
+        target, cursor_info = correct_touches[i]
 
-        alt_inter_time = float(np.sum(gaps))
+        if target is not None:
+            # We're on a correct target
+            if current_interval_target is None:
+                # Start a new interval
+                current_interval_target = target
+                current_interval_start_cursor = cursor_info
+            elif current_interval_target != target:
+                # Different target - close previous interval at current point and start new one
+                intervals.append((current_interval_target, current_interval_start_cursor, cursor_info))
 
-        assert np.isclose(inter_time, alt_inter_time, atol=1e-6), (
-            f"inter_time ({inter_time}) != alt_inter_time ({alt_inter_time})"
-        )
+                # Start new interval
+                current_interval_target = target
+                current_interval_start_cursor = cursor_info
+        else:
+            # Not on a target - close current interval if exists
+            if current_interval_target is not None:
+                # Close interval at current point (when we left the target)
+                intervals.append((current_interval_target, current_interval_start_cursor, cursor_info))
+
+                current_interval_target = None
+                current_interval_start_cursor = None
+
+    # Close any open interval at the end
+    if current_interval_target is not None:
+        # Use the last cursor as end of interval
+        last_cursor = correct_touches[-1][1]
+        intervals.append((current_interval_target, current_interval_start_cursor, last_cursor))
+
+    return intervals
+
+
+def calculate_intra_target_time(
+        trial: TMTTrial,
+        subject: TMTSubject
+) -> float:
+    """
+    Calculate the intra-target time for a given trial and subject.
+    The intra-target time is defined as the sum of the times spent within each target area.
+
+    This function first identifies continuous intervals where the cursor is on correct targets,
+    then sums the duration of all those intervals.
+
+    :param trial: TMTTrial instance
+    :param subject: TMTSubject instance with target_radius
+    :return: Total time spent on correct targets in seconds
+    """
+    # Get all intervals where cursor is on correct targets
+    intervals = get_intra_target_intervals(trial, subject)
+
+    # Sum the duration of all intervals
+    total_time = sum(end_cursor.time - start_cursor.time for _, start_cursor, end_cursor in intervals)
+
+    return total_time
+
+
+def calculate_inter_target_time(
+        trial: TMTTrial,
+        intra_time
+) -> float:
+    """
+    Calculate the inter-target time for a given trial and subject.
+    The inter-target time is defined as the time spent moving between targets
+    (i.e., not on any correct target).
+
+    This is calculated as: (last_cursor_time - first_cursor_time) - intra-target time
+
+    :param trial: TMTTrial instance
+    :param intra_time: Pre-calculated intra-target time
+    :return: Total time spent between targets in seconds
+    """
+    # Get the cursor trail (respecting custom start if present)
+
+    cursor_trail = trial.get_cursor_trail_from_start()
+
+    # If no cursor trail, return 0
+    if not cursor_trail:
+        return 0.0
+
+    # Calculate total time from first to last cursor point
+    total_time = cursor_trail[-1].time - cursor_trail[0].time
+
+    # Get the intra-target time
+
+    # Inter-target time is the complement: total time minus time on targets
+    inter_time = total_time - intra_time
+
+    return inter_time
+

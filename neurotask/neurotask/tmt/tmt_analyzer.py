@@ -68,7 +68,7 @@ class TMTAnalyzer:
         3. Calculate and save metrics (csv) and store them in memory.
         """
         # 1. Map dataset -> Experiment
-        self.experiment = self.mapper.map(self.dataset_path, None) if self.experiment is None else self.experiment
+        self.experiment = self.mapper.map(self.dataset_path) if self.experiment is None else self.experiment
 
         logging.info(f"Experiment loaded. Number of subjects: {len(self.experiment.subjects)}")
 

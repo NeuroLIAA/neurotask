@@ -18,6 +18,7 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
             difference = self.calculate_distance_difference_from_ideal(cursor_trail)
             differences.append(difference)
 
+
         metrics[self.get_metric_name('distance_difference_from_ideal')] = float(np.mean(differences))
 
         return metrics
