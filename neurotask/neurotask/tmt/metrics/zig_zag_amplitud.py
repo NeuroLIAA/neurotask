@@ -23,11 +23,7 @@ class ZigZagAmplitude(BaseMetricCalculator):
             intra_target_intervals = intra_target_intervals[1:]
 
         time_differences = []
-        # Recorremos pares [número, letra]
         for i in range(0, len(intra_target_intervals) - 1, 2):
-            # TODO GIAN: dejar mas claro
-            # esta primero letra porque los intervalos siempre tienen como target el destino
-            # por ende, nunca esta el 1
             letter_target, letter_start_cursor_info, _ = intra_target_intervals[i]
             number_target, number_start_cursor_info, _ = intra_target_intervals[i + 1]
 
