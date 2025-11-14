@@ -12,8 +12,8 @@ class TargetTime(BaseMetricCalculator):
             raise ValueError("Subject must be provided")
 
         intra_time = calculate_intra_target_time(trial, subject)
-        metrics['intra_target_time'] = intra_time
-        metrics['inter_target_time'] = calculate_inter_target_time(trial, intra_time)
+        metrics[self.get_metric_name('intra_target_time')] = intra_time
+        metrics[self.get_metric_name('inter_target_time')] = calculate_inter_target_time(trial, intra_time)
 
         return metrics
 
