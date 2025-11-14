@@ -24,10 +24,6 @@ class ZigZagAmplitude(BaseMetricCalculator):
         if trial.trial_type != TrialType.PART_B:
             return metrics
 
-        # Remove first correct interval if it corresponds to the initial target
-        if intra_target_intervals and intra_target_intervals[0][0].content == '1':
-            intra_target_intervals = intra_target_intervals[1:]
-
         letter_to_number_differences = []
         number_to_letter_differences = []
 

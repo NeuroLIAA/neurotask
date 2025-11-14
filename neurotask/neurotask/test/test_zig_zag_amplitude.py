@@ -85,6 +85,22 @@ def test_letter_and_number_latencies_are_computed():
     assert metrics["number_to_letter_latency"] == pytest.approx(2.0)
 
 
+def test_initial_number_to_letter_path_is_counted():
+    sequence = ["1", "A", "2"]
+    touches = [
+        ("1", 0.0), ("1", 1.0), ("off", 1.5),
+        ("A", 2.0), ("A", 3.0), ("off", 3.5),
+        ("2", 4.0), ("2", 5.0),
+    ]
+
+    trial, subject = _build_trial_and_subject(sequence, touches, TrialType.PART_B)
+
+    metrics = _compute_metrics(trial, subject)
+
+    assert metrics["number_to_letter_latency"] == pytest.approx(2.0)
+    assert metrics["letter_to_number_latency"] == pytest.approx(2.0)
+
+
 def test_non_part_b_trials_return_nan():
     sequence = ["1", "A", "2"]
     touches = [
@@ -101,6 +117,22 @@ def test_non_part_b_trials_return_nan():
     assert np.isnan(metrics["number_to_letter_latency"])
 
 
+def test_initial_number_to_letter_path_is_counted():
+    sequence = ["1", "A", "2"]
+    touches = [
+        ("1", 0.0), ("1", 1.0), ("off", 1.5),
+        ("A", 2.0), ("A", 3.0), ("off", 3.5),
+        ("2", 4.0), ("2", 5.0),
+    ]
+
+    trial, subject = _build_trial_and_subject(sequence, touches, TrialType.PART_B)
+
+    metrics = _compute_metrics(trial, subject)
+
+    assert metrics["number_to_letter_latency"] == pytest.approx(2.0)
+    assert metrics["letter_to_number_latency"] == pytest.approx(2.0)
+
+
 def test_invalid_alternation_raises_assertion():
     sequence = ["1", "A", "B"]
     touches = [
@@ -113,4 +145,20 @@ def test_invalid_alternation_raises_assertion():
 
     with pytest.raises(AssertionError):
         _compute_metrics(trial, subject)
+
+
+def test_initial_number_to_letter_path_is_included():
+    sequence = ["1", "A", "2"]
+    touches = [
+        ("1", 0.0), ("1", 1.0), ("off", 1.5),
+        ("A", 3.0), ("A", 4.0), ("off", 4.5),
+        ("2", 6.0), ("2", 7.0),
+    ]
+
+    trial, subject = _build_trial_and_subject(sequence, touches, TrialType.PART_B)
+
+    metrics = _compute_metrics(trial, subject)
+
+    assert metrics["number_to_letter_latency"] == pytest.approx(3.0)
+    assert metrics["letter_to_number_latency"] == pytest.approx(3.0)
 
