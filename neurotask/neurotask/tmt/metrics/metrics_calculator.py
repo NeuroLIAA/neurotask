@@ -295,11 +295,10 @@ def compute_trial_metrics(
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
         get_all_trails_between_targets(trial, subject.target_radius)
     )
-    correct_intervals = get_all_intervals_between_targets(trial, subject.target_radius)
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, correct_intervals)
+                                         speed_threshold, consecutive_points)
     return metrics
 
 

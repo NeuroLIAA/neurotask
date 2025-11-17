@@ -11,7 +11,7 @@ class SpeedMetricsCalculator(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points, correct_intervals) -> dict:
+                    speed_threshold, consecutive_points) -> dict:
         speed_metrics = compute_speed_and_acceleration_metrics(trial)
 
         # Aplicar el método get_metric_name a cada clave del diccionario
