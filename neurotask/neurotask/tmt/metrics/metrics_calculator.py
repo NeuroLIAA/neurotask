@@ -12,7 +12,7 @@ from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
-from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, get_all_intervals_between_targets, \
+from .targets_touched import TargetsTouchesCalculator, get_all_trails_between_targets, \
     count_correctly_touched_targets
 from ..cut_criteria.cut_criteria import CutCriteria
 from ..cut_criteria.cut_implementation import cut_trial

@@ -243,33 +243,3 @@ def get_all_trails_between_targets(
             break
 
     return segments
-
-
-def get_all_intervals_between_targets(
-        trial: TMTTrial,
-        target_radius: float
-) -> List[Tuple[TMTTarget, CursorInfo, CursorInfo]]:
-    """
-    Utiliza get_all_trails_between_targets para devolver, por cada target tocado
-    correctamente, una tupla:
-      (target, inicio_del_trail, fin_del_trail)
-
-    Donde:
-      - inicio_del_trail  = primer CursorInfo del segmento hacia ese target
-      - fin_del_trail     = último CursorInfo (justo en el toque del target)
-
-    :param trial:         instancia de TMTTrial con su lista de estímulos.
-    :param target_radius: radio para detección de toques.
-    :return: lista de (target, CursorInfo_inicio, CursorInfo_fin)
-    """
-    # 1) Obtengo los segmentos con la función existente
-    segments: List[Tuple[TMTTarget, List[CursorInfo]]] = get_all_trails_between_targets(trial, target_radius)
-
-    # 2) Convierto cada segmento en (target, inicio, fin)
-    intervals: List[Tuple[TMTTarget, CursorInfo, CursorInfo]] = []
-    for target, cursor_segment in segments:
-        start_info = cursor_segment[0]
-        end_info = cursor_segment[-1]
-        intervals.append((target, start_info, end_info))
-
-    return intervals
