@@ -96,7 +96,7 @@ def calculate_speeds_between_cursor_positions(trial: TMTTrial) -> List[float]:
     return calculate_speeds(cursor_trail_from_first_click)
 
 
-def calculate_speeds(cursor_trail: List[CursorInfo]) -> List[float]:
+def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_threshold: bool = True) -> List[float]:
     if len(cursor_trail) < 2:
         raise ValueError("At least two points are required to calculate velocity")
 
@@ -108,7 +108,8 @@ def calculate_speeds(cursor_trail: List[CursorInfo]) -> List[float]:
         speed = calculate_speed(current_cursor, previous_cursor)
         if speed > INVALID_SPEED_THRESHOLD:
             logging.warning(f"Speed value of {speed} detected. This may be an error.")
-            raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
+            if raise_on_threshold:
+                raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
         speeds.append(speed)
 
     return speeds
