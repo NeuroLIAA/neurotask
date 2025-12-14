@@ -4,7 +4,7 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 
-from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds
+from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds, InvalidSpeedError
 from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
@@ -379,7 +379,7 @@ def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dic
         try:
             speed_threshold = calculate_speed_threshold(subject)
             speed_thresholds[subject_id] = speed_threshold
-        except ValueError as e:
+        except (ValueError, InvalidSpeedError) as e:
             # Skip subject if an error occurs
             logging.warning(f"Error calculating speed threshold for subject {subject_id}: {e}")
             continue
