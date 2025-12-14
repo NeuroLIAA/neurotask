@@ -88,15 +88,15 @@ def cut_trial_at_minimum_correct_targets(
     Raises:
         ValueError: If the trial does not contain the required number of correct target segments.
     """
-    correct_intervals: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(trial, subject)
+    intra_target_interval: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(trial, subject)
 
-    if len(correct_intervals) < correct_targets_minimum:
+    if len(intra_target_interval) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")
 
     # Get the Nth interval (where N = correct_targets_minimum)
     # Since correct_touched_targets_for_every_cursor_point ensures targets are touched in order,
     # the Nth interval corresponds to the Nth target in trial.stimuli
-    cutoff_interval = correct_intervals[correct_targets_minimum - 1]
+    cutoff_interval = intra_target_interval[correct_targets_minimum - 1]
 
     # Use the start cursor (index 1) to cut when the target is first touched
     cursor_info = cutoff_interval[1]

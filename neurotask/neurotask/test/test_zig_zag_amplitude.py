@@ -62,7 +62,6 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject) -> dict:
         calculate_crosses=False,
         speed_threshold=None,
         consecutive_points=None,
-        correct_intervals=None,
     )
 
 
