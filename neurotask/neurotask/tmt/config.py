@@ -1,8 +1,8 @@
 """
-Configuración centralizada para el análisis TMT.
+Centralized configuration for TMT analysis.
 """
 
-# Umbral de velocidad máxima válida (en píxeles/milisegundo).
-# Velocidades superiores a este valor se consideran errores de medición.
+# Maximum valid speed threshold (in pixels/millisecond).
+# Speeds above this value are considered measurement errors.
 INVALID_SPEED_THRESHOLD = 8.0
 
