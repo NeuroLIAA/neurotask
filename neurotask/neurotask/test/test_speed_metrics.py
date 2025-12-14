@@ -242,19 +242,11 @@ def test_speed_at_threshold_is_valid():
     """
     Speed exactly at INVALID_SPEED_THRESHOLD should not raise an error.
     """
-    # Create movement at exactly the threshold
+    # Create movement at exactly the threshold (need 3 points for acceleration calculation)
     cursor_trail = _build_cursor_trail([
         (0.0, 0.0, 0.0),
-        (INVALID_SPEED_THRESHOLD, 0.0, 1.0),  # speed = 8 px/ms = threshold
-    ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
-
-    # This should not raise - need at least 3 points for acceleration
-    # So we add one more point
-    cursor_trail = _build_cursor_trail([
-        (0.0, 0.0, 0.0),
-        (INVALID_SPEED_THRESHOLD, 0.0, 1.0),
-        (INVALID_SPEED_THRESHOLD * 2, 0.0, 2.0),
+        (INVALID_SPEED_THRESHOLD, 0.0, 1.0),      # speed = threshold
+        (INVALID_SPEED_THRESHOLD * 2, 0.0, 2.0),  # speed = threshold
     ])
     trial, subject = _build_trial_and_subject(cursor_trail)
 
