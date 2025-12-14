@@ -9,7 +9,7 @@ from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
 
 
 class InvalidSpeedError(Exception):
-    """Excepción lanzada cuando la velocidad excede INVALID_SPEED_THRESHOLD."""
+    """Exception raised when speed exceeds INVALID_SPEED_THRESHOLD."""
     pass
 
 
