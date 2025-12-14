@@ -5,6 +5,7 @@ import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.distance_calculation import calculate_distance
 from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTSubject, TMTTarget
+from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
 
 
 class SpeedMetricsCalculator(BaseMetricCalculator):
@@ -100,9 +101,9 @@ def calculate_speeds(cursor_trail: List[CursorInfo]) -> List[float]:
         current_cursor = cursor_trail[i]
         previous_cursor = cursor_trail[i - 1]
         speed = calculate_speed(current_cursor, previous_cursor)
-        if speed > 50:  # TODO GIAN PROBAR, ver porque pasa esto seguro es el sampling rate
+        if speed > INVALID_SPEED_THRESHOLD:
             logging.warning(f"Speed value of {speed} detected. This may be an error.")
-            raise ValueError(f"Speed value of {speed} detected. This may be an error.")
+            raise ValueError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
         speeds.append(speed)
 
     return speeds
