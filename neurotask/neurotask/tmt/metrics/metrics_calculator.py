@@ -8,7 +8,7 @@ from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalcula
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
 from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
-from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator
+from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator, InvalidSpeedError
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
@@ -116,6 +116,18 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             valid_row.update(cut_trial_metrics)
 
             rows.append(valid_row)
+
+        except InvalidSpeedError as e:
+            print(f"ERROR: Trial {trial.id} for subject {subject_id}: {e}")
+            error_msg = str(e)
+            logging.exception(f"Invalid speed in trial {trial.id} for subject {subject_id}: {e}")
+            rows.append(
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.INVALID_SPEED,
+                    error_msg=error_msg
+                )
+            )
 
         except Exception as e:
             print(f"ERROR: Trial {trial.id} for subject {subject_id}: {e}")

@@ -8,6 +8,11 @@ from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTSubject, TMTT
 from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
 
 
+class InvalidSpeedError(Exception):
+    """Excepción lanzada cuando la velocidad excede INVALID_SPEED_THRESHOLD."""
+    pass
+
+
 class SpeedMetricsCalculator(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
@@ -103,7 +108,7 @@ def calculate_speeds(cursor_trail: List[CursorInfo]) -> List[float]:
         speed = calculate_speed(current_cursor, previous_cursor)
         if speed > INVALID_SPEED_THRESHOLD:
             logging.warning(f"Speed value of {speed} detected. This may be an error.")
-            raise ValueError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
+            raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
         speeds.append(speed)
 
     return speeds
