@@ -5,8 +5,6 @@ from neurotask.tmt.metrics.speed_metrics import (
     SpeedMetricsCalculator,
     InvalidSpeedError,
     NonMonotonicTimeError,
-    calculate_speed,
-    calculate_acceleration,
 )
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
@@ -260,29 +258,31 @@ def test_speed_at_threshold_is_valid():
 
 def test_non_monotonic_time_raises_error():
     """
-    When current_cursor.time <= previous_cursor.time, NonMonotonicTimeError should be raised.
+    When timestamps go backwards, NonMonotonicTimeError should be raised.
     """
-    current = CursorInfo(Coordinate(1.0, 0.0), 1.0)
-    previous = CursorInfo(Coordinate(0.0, 0.0), 2.0)  # time goes backwards
+    # Time goes from 0 -> 2 -> 1 (backwards)
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 2.0),
+        (2.0, 0.0, 1.0),  # time goes backwards
+    ])
+    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        calculate_speed(current, previous)
+        _compute_metrics(trial, subject)
 
 
 def test_equal_time_raises_non_monotonic_error():
     """
-    When current_cursor.time == previous_cursor.time, NonMonotonicTimeError should be raised.
+    When two consecutive timestamps are equal, NonMonotonicTimeError should be raised.
     """
-    current = CursorInfo(Coordinate(1.0, 0.0), 1.0)
-    previous = CursorInfo(Coordinate(0.0, 0.0), 1.0)  # same time
+    # Time stays at 1.0 for two consecutive points
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (1.0, 0.0, 1.0),
+        (2.0, 0.0, 1.0),  # same time as previous
+    ])
+    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        calculate_speed(current, previous)
-
-
-def test_acceleration_non_monotonic_time_raises_error():
-    """
-    When current_time <= previous_time in calculate_acceleration, NonMonotonicTimeError should be raised.
-    """
-    with pytest.raises(NonMonotonicTimeError, match="current_time must be greater than previous_time"):
-        calculate_acceleration(current_speed=2.0, previous_speed=1.0, current_time=1.0, previous_time=2.0)
+        _compute_metrics(trial, subject)
