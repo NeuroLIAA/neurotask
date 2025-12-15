@@ -4,6 +4,8 @@ from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
 from neurotask.tmt.metrics.speed_metrics import (
     SpeedMetricsCalculator,
     InvalidSpeedError,
+    NonMonotonicTimeError,
+    calculate_speed,
 )
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
@@ -254,3 +256,24 @@ def test_speed_at_threshold_is_valid():
 
     assert metrics["mean_speed"] == pytest.approx(INVALID_SPEED_THRESHOLD)
 
+
+def test_non_monotonic_time_raises_error():
+    """
+    When current_cursor.time <= previous_cursor.time, NonMonotonicTimeError should be raised.
+    """
+    current = CursorInfo(Coordinate(1.0, 0.0), 1.0)
+    previous = CursorInfo(Coordinate(0.0, 0.0), 2.0)  # time goes backwards
+
+    with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
+        calculate_speed(current, previous)
+
+
+def test_equal_time_raises_non_monotonic_error():
+    """
+    When current_cursor.time == previous_cursor.time, NonMonotonicTimeError should be raised.
+    """
+    current = CursorInfo(Coordinate(1.0, 0.0), 1.0)
+    previous = CursorInfo(Coordinate(0.0, 0.0), 1.0)  # same time
+
+    with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
+        calculate_speed(current, previous)

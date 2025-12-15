@@ -13,6 +13,11 @@ class InvalidSpeedError(Exception):
     pass
 
 
+class NonMonotonicTimeError(Exception):
+    """Exception raised when cursor timestamps are not strictly increasing."""
+    pass
+
+
 class SpeedMetricsCalculator(BaseMetricCalculator):
 
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
@@ -72,7 +77,7 @@ def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
 
 def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo) -> float:
     if current_cursor.time <= previous_cursor.time:
-        raise ValueError("current_cursor.time must be greater than previous_cursor.time")
+        raise NonMonotonicTimeError("current_cursor.time must be greater than previous_cursor.time")
     distance = calculate_distance(current_cursor.position, previous_cursor.position)
     time = current_cursor.time - previous_cursor.time
     return distance / time

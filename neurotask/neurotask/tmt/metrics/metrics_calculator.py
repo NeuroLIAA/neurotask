@@ -8,7 +8,7 @@ from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalcula
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
 from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
-from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator, InvalidSpeedError
+from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator, InvalidSpeedError, NonMonotonicTimeError
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
 from .distance_calculation import TotalDistanceCalculator
@@ -125,6 +125,17 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                 create_invalid_trial_row(
                     subject, subject_id, trial, speed_threshold,
                     invalid_cause=InvalidCause.INVALID_SPEED,
+                    error_msg=error_msg
+                )
+            )
+
+        except NonMonotonicTimeError as e:
+            error_msg = str(e)
+            logging.warning(f"Non-monotonic time in trial {trial.id} for subject {subject_id}: {e}")
+            rows.append(
+                create_invalid_trial_row(
+                    subject, subject_id, trial, speed_threshold,
+                    invalid_cause=InvalidCause.NON_MONOTONIC_TIME,
                     error_msg=error_msg
                 )
             )
