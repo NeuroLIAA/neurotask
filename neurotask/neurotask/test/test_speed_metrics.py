@@ -6,6 +6,7 @@ from neurotask.tmt.metrics.speed_metrics import (
     InvalidSpeedError,
     NonMonotonicTimeError,
     calculate_speed,
+    calculate_acceleration,
 )
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
@@ -277,3 +278,11 @@ def test_equal_time_raises_non_monotonic_error():
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
         calculate_speed(current, previous)
+
+
+def test_acceleration_non_monotonic_time_raises_error():
+    """
+    When current_time <= previous_time in calculate_acceleration, NonMonotonicTimeError should be raised.
+    """
+    with pytest.raises(NonMonotonicTimeError, match="current_time must be greater than previous_time"):
+        calculate_acceleration(current_speed=2.0, previous_speed=1.0, current_time=1.0, previous_time=2.0)

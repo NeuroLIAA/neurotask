@@ -86,8 +86,7 @@ def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo) -> 
 def calculate_acceleration(current_speed: float, previous_speed: float, current_time: float,
                            previous_time: float) -> float:
     if current_time <= previous_time:
-        raise ValueError("current_time must be greater than previous_time")
-        # TODO GIAN VER en old tmt
+        raise NonMonotonicTimeError("current_time must be greater than previous_time")
 
     time_diff = current_time - previous_time
 
