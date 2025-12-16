@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
+from neurotask.tmt.invalid_cause import InvalidCause
+
 
 @dataclass
 class Coordinate:
@@ -50,21 +52,25 @@ class TMTTrial:
 
     mapping_error: bool = False
 
+    invalid_cause: Optional["InvalidCause"] = None
+
     @classmethod
-    def invalid_trial(cls, trial_id: str, order_of_appearance: int, stimuli, trial_type) -> "TMTTrial":
+    def invalid_trial(cls, trial_id: str, order_of_appearance: int, stimuli, trial_type,
+                      invalid_cause: "InvalidCause" = None) -> "TMTTrial":
         """
         Crea un trial inválido con todos los campos vacíos o None, y mapping_error=True.
         """
         return cls(
             stimuli=stimuli,
             cursor_trail=[],
-            trial_type=trial_type,  # Tipo desconocido o inválido
+            trial_type=trial_type,
             id=trial_id,
             order_of_appearance=order_of_appearance,
             rt=0.0,
             with_custom_start=False,
             start=None,
-            mapping_error=True,  # 🔹 marcamos que hubo un error en el mapeo
+            mapping_error=True,
+            invalid_cause=invalid_cause,
         )
 
     def get_cursor_trail_from_start(self) -> List[CursorInfo]:

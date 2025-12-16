@@ -56,7 +56,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                 rows.append(
                     create_invalid_trial_row(
                         subject, subject_id, trial, speed_threshold,
-                        invalid_cause=InvalidCause.INVALID_MODEL,
+                        invalid_cause=None,
                         error_msg="Trial is_valid function return false."
                     )
                 )
@@ -262,14 +262,15 @@ def create_invalid_trial_row(
         subject_id: str,
         trial: TMTTrial,
         speed_threshold: float,
-        invalid_cause: InvalidCause,
+        invalid_cause: Optional[InvalidCause],
         error_msg: Optional[str] = None
 ) -> Dict[str, Any]:
-    if invalid_cause == InvalidCause.INVALID_MODEL:
-        if not trial.is_valid_start_configuration():
-            invalid_cause = InvalidCause.INVALID_START_CONFIGURATION
-        elif not trial.is_valid_length():
-            invalid_cause = InvalidCause.INVALID_LENGTH
+    # Si es un mapping_error, usar la causa del mapper si existe
+    if trial.mapping_error:
+        if trial.invalid_cause is not None:
+            invalid_cause = trial.invalid_cause
+        else:
+            invalid_cause = InvalidCause.INVALID_MODEL
 
     invalid_trial_row = {
         "subject_id": subject_id,
