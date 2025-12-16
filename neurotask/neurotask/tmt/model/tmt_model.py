@@ -111,6 +111,27 @@ class TMTTrial:
     def is_valid_length(self):
         return len(self.get_cursor_trail_from_start()) > 2
 
+    def get_invalid_cause(self) -> "InvalidCause":
+        """
+        Retorna la causa de invalidez del trial.
+        Lanza excepción si el trial es válido.
+        """
+        if self.is_valid():
+            raise ValueError("Cannot get invalid cause for a valid trial")
+
+        # Si tiene causa específica (del mapper), usarla
+        if self.invalid_cause is not None:
+            return self.invalid_cause
+
+        # Determinar causa basándose en la configuración
+        if not self.is_valid_start_configuration():
+            return InvalidCause.INVALID_START_CONFIGURATION
+        elif not self.is_valid_length():
+            return InvalidCause.INVALID_LENGTH
+
+        # Fallback (mapping_error=True sin causa específica)
+        return InvalidCause.INVALID_MODEL
+
 
 from dataclasses import dataclass
 from typing import List, Optional
