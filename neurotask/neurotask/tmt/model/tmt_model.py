@@ -133,10 +133,6 @@ class TMTTrial:
         return InvalidCause.INVALID_MODEL
 
 
-from dataclasses import dataclass
-from typing import List, Optional
-
-
 @dataclass
 class SessionContext:
     device: Optional[str]
