@@ -56,7 +56,6 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
                 rows.append(
                     create_invalid_trial_row(
                         subject, subject_id, trial, speed_threshold,
-                        invalid_cause=InvalidCause.INVALID_MODEL,
                         error_msg="Trial is_valid function return false."
                     )
                 )
@@ -262,14 +261,12 @@ def create_invalid_trial_row(
         subject_id: str,
         trial: TMTTrial,
         speed_threshold: float,
-        invalid_cause: InvalidCause,
+        invalid_cause: Optional[InvalidCause] = None,
         error_msg: Optional[str] = None
 ) -> Dict[str, Any]:
-    if invalid_cause == InvalidCause.INVALID_MODEL:
-        if not trial.is_valid_start_configuration():
-            invalid_cause = InvalidCause.INVALID_START_CONFIGURATION
-        elif not trial.is_valid_length():
-            invalid_cause = InvalidCause.INVALID_LENGTH
+    # Si no se pasó una causa, obtenerla del trial
+    if invalid_cause is None:
+        invalid_cause = trial.get_invalid_cause()
 
     invalid_trial_row = {
         "subject_id": subject_id,

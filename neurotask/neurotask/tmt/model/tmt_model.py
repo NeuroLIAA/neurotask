@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Enum
 from typing import List, Optional
 
+from neurotask.tmt.invalid_cause import InvalidCause
+
 
 @dataclass
 class Coordinate:
@@ -50,21 +52,25 @@ class TMTTrial:
 
     mapping_error: bool = False
 
+    invalid_cause: Optional["InvalidCause"] = None
+
     @classmethod
-    def invalid_trial(cls, trial_id: str, order_of_appearance: int, stimuli, trial_type) -> "TMTTrial":
+    def invalid_trial(cls, trial_id: str, order_of_appearance: int, stimuli, trial_type,
+                      invalid_cause: "InvalidCause" = None) -> "TMTTrial":
         """
         Crea un trial inválido con todos los campos vacíos o None, y mapping_error=True.
         """
         return cls(
             stimuli=stimuli,
             cursor_trail=[],
-            trial_type=trial_type,  # Tipo desconocido o inválido
+            trial_type=trial_type,
             id=trial_id,
             order_of_appearance=order_of_appearance,
             rt=0.0,
             with_custom_start=False,
             start=None,
-            mapping_error=True,  # 🔹 marcamos que hubo un error en el mapeo
+            mapping_error=True,
+            invalid_cause=invalid_cause,
         )
 
     def get_cursor_trail_from_start(self) -> List[CursorInfo]:
@@ -94,10 +100,7 @@ class TMTTrial:
         if self.mapping_error:
             return False
 
-        valid_length = self.is_valid_length()
-        valid_start_configuration = self.is_valid_start_configuration()
-
-        return valid_length and valid_start_configuration
+        return self.is_valid_start_configuration() and self.is_valid_length()
 
     def is_valid_start_configuration(self):
         return (self.with_custom_start is True) == (self.start is not None)
@@ -105,9 +108,26 @@ class TMTTrial:
     def is_valid_length(self):
         return len(self.get_cursor_trail_from_start()) > 2
 
+    def get_invalid_cause(self) -> "InvalidCause":
+        """
+        Retorna la causa de invalidez del trial.
+        Lanza excepción si el trial es válido.
+        """
+        if self.is_valid():
+            raise ValueError("Cannot get invalid cause for a valid trial")
 
-from dataclasses import dataclass
-from typing import List, Optional
+        # Si tiene causa específica (del mapper), usarla
+        if self.invalid_cause is not None:
+            return self.invalid_cause
+
+        # Determinar causa basándose en la configuración
+        if not self.is_valid_start_configuration():
+            return InvalidCause.INVALID_START_CONFIGURATION
+        elif not self.is_valid_length():
+            return InvalidCause.INVALID_LENGTH
+
+        # Fallback (mapping_error=True sin causa específica)
+        return InvalidCause.INVALID_MODEL
 
 
 @dataclass
