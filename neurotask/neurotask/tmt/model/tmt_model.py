@@ -100,10 +100,7 @@ class TMTTrial:
         if self.mapping_error:
             return False
 
-        valid_length = self.is_valid_length()
-        valid_start_configuration = self.is_valid_start_configuration()
-
-        return valid_length and valid_start_configuration
+        return self.is_valid_start_configuration() and self.is_valid_length()
 
     def is_valid_start_configuration(self):
         return (self.with_custom_start is True) == (self.start is not None)
