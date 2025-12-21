@@ -5,7 +5,6 @@ from typing import List, Tuple, Dict, Optional
 import numpy as np
 
 from neurotask.tmt.metrics.speed_metrics import (
-    calculate_speeds_between_cursor_positions,
     calculate_speeds_between_cursor_positions_with_validity,
     calculate_speeds,
     calculate_speed,
