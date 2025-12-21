@@ -85,11 +85,12 @@ def classify_cursor_positions_with_hesitation(
         tmt_trial: TMTTrial,
         target_radius: float,
         speed_threshold,
-        consecutive_points=5
+        consecutive_points=5,
+        raise_on_error: bool = False
 ) -> List[Tuple[str, CursorInfo]]:
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
-    speeds = calculate_speeds_between_cursor_positions(tmt_trial)
+    speeds = calculate_speeds_between_cursor_positions(tmt_trial, raise_on_error)
     over_target_flags = calculate_over_targets(cursor_trail, target_radius, tmt_trial.stimuli)
 
     current_state = 'Search'
