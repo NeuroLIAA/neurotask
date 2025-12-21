@@ -6,17 +6,19 @@ import numpy as np
 
 from neurotask.tmt.metrics.speed_metrics import (
     calculate_speeds_between_cursor_positions,
+    calculate_speeds_between_cursor_positions_with_validity,
     calculate_speeds,
     calculate_speed,
     InvalidSpeedError,
-    NonMonotonicTimeError
+    NonMonotonicTimeError,
+    SpeedResult
 )
 from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 
 def speed_increases_over_consecutive_points(
-        speeds: List[float],
+        speeds: List[SpeedResult],
         cursor_index: int,
         speed_threshold: float,
         consecutive_points: int
@@ -25,7 +27,7 @@ def speed_increases_over_consecutive_points(
     Determines if the speed has increased over a specified number of consecutive points beyond a given speed threshold.
 
     Parameters:
-    - speeds: List of speed values between cursor positions.
+    - speeds: List of SpeedResult values between cursor positions.
     - cursor_index: The current index in the cursor trail (starting from 0).
     - speed_threshold: The minimum increase in speed between consecutive points to consider.
     - consecutive_points: Number of consecutive points over which the speed must increase.
@@ -42,14 +44,16 @@ def speed_increases_over_consecutive_points(
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
         if i <= 0:
             return False  # Not enough data
-        current_speed = speeds[i]
-        if current_speed <= speed_threshold:
+        speed_result = speeds[i]
+        if not speed_result.is_valid:
+            return False  # Invalid speed, cannot evaluate
+        if speed_result.value <= speed_threshold:
             return False  # Speed did not increase sufficiently
     return True
 
 
 def speed_decreases_over_consecutive_points(
-        speeds: List[float],
+        speeds: List[SpeedResult],
         cursor_index: int,
         speed_threshold: float,
         consecutive_points: int
@@ -58,7 +62,7 @@ def speed_decreases_over_consecutive_points(
     Determines if the speed has decreased over a specified number of consecutive points beyond a given speed threshold.
 
     Parameters:
-    - speeds: List of speed values between cursor positions.
+    - speeds: List of SpeedResult values between cursor positions.
     - cursor_index: The current index in the cursor trail (starting from 0).
     - speed_threshold: The minimum decrease in speed between consecutive points to consider.
     - consecutive_points: Number of consecutive points over which the speed must decrease.
@@ -75,8 +79,10 @@ def speed_decreases_over_consecutive_points(
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
         if i <= 0:
             return False  # Not enough data
-        current_speed = speeds[i]
-        if current_speed > speed_threshold:
+        speed_result = speeds[i]
+        if not speed_result.is_valid:
+            return False  # Invalid speed, cannot evaluate
+        if speed_result.value > speed_threshold:
             return False  # Speed did not decrease sufficiently
     return True
 
@@ -85,12 +91,11 @@ def classify_cursor_positions_with_hesitation(
         tmt_trial: TMTTrial,
         target_radius: float,
         speed_threshold,
-        consecutive_points=5,
-        raise_on_error: bool = False
+        consecutive_points=5
 ) -> List[Tuple[str, CursorInfo]]:
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
-    speeds = calculate_speeds_between_cursor_positions(tmt_trial, raise_on_error)
+    speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
     over_target_flags = calculate_over_targets(cursor_trail, target_radius, tmt_trial.stimuli)
 
     current_state = 'Search'

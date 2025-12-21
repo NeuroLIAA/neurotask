@@ -1,7 +1,13 @@
 import logging
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, NamedTuple
 
 import numpy as np
+
+
+class SpeedResult(NamedTuple):
+    """Result of a speed calculation with validity flag."""
+    is_valid: bool
+    value: float
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.metrics.distance_calculation import calculate_distance
 from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTSubject, TMTTarget
@@ -102,6 +108,45 @@ def calculate_acceleration(current_speed: float, previous_speed: float, current_
 def calculate_speeds_between_cursor_positions(trial: TMTTrial, raise_on_error: bool = False) -> List[float]:
     cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
     return calculate_speeds(cursor_trail_from_first_click, raise_on_error)
+
+
+def calculate_speeds_with_validity(cursor_trail: List[CursorInfo]) -> List[SpeedResult]:
+    """
+    Calculate speeds between consecutive cursor positions with validity flags.
+
+    Args:
+        cursor_trail: List of cursor positions.
+
+    Returns:
+        List of SpeedResult. Always len(result) == len(cursor_trail) - 1.
+        If is_valid=False, value=0.0.
+    """
+    if len(cursor_trail) < 2:
+        raise ValueError("At least two points are required to calculate velocity")
+
+    results = []
+    for i in range(1, len(cursor_trail)):
+        try:
+            speed = calculate_speed(cursor_trail[i], cursor_trail[i - 1])
+            results.append(SpeedResult(is_valid=True, value=speed))
+        except (InvalidSpeedError, NonMonotonicTimeError):
+            results.append(SpeedResult(is_valid=False, value=0.0))
+
+    return results
+
+
+def calculate_speeds_between_cursor_positions_with_validity(trial: TMTTrial) -> List[SpeedResult]:
+    """
+    Calculate speeds between cursor positions with validity flags for a trial.
+
+    Args:
+        trial: The TMT trial.
+
+    Returns:
+        List of SpeedResult. Always len(result) == len(cursor_trail) - 1.
+    """
+    cursor_trail = trial.get_cursor_trail_from_start()
+    return calculate_speeds_with_validity(cursor_trail)
 
 
 def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_error: bool = False) -> List[float]:
