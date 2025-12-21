@@ -4,7 +4,13 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 
-from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds, InvalidSpeedError, NonMonotonicTimeError
+from neurotask.tmt.metrics.speed_metrics import (
+    calculate_speeds_between_cursor_positions,
+    calculate_speeds,
+    calculate_speed,
+    InvalidSpeedError,
+    NonMonotonicTimeError
+)
 from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
@@ -249,29 +255,17 @@ def calculate_distance_in_states(classified_positions):
 
 def calculate_average_speed_in_states(classified_positions):
     state_speeds = {'Search': [], 'Travel': [], 'Hesitation': []}
-    previous_position = classified_positions[0][1].position
-    previous_time = classified_positions[0][1].time
+    previous_cursor = classified_positions[0][1]
     previous_state = classified_positions[0][0]
 
     for i in range(1, len(classified_positions)):
-        current_position = classified_positions[i][1].position
-        current_time = classified_positions[i][1].time
+        current_cursor = classified_positions[i][1]
         current_state = classified_positions[i][0]
 
-        # Calculate distance and time difference
-        distance = math.hypot(
-            current_position.x - previous_position.x,
-            current_position.y - previous_position.y
-        )
-        time_diff = current_time - previous_time
+        speed = calculate_speed(current_cursor, previous_cursor)
+        state_speeds[previous_state].append(speed)
 
-        if time_diff > 0:
-            speed = distance / time_diff
-            state_speeds[previous_state].append(speed)
-
-        # Update for next iteration
-        previous_position = current_position
-        previous_time = current_time
+        previous_cursor = current_cursor
         previous_state = current_state
 
     # Calculate average speeds
