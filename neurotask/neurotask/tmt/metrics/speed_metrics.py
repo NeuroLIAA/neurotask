@@ -75,12 +75,17 @@ def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
     }
 
 
-def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo) -> float:
+def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo, raise_on_threshold: bool = True) -> float:
     if current_cursor.time <= previous_cursor.time:
         raise NonMonotonicTimeError("current_cursor.time must be greater than previous_cursor.time")
     distance = calculate_distance(current_cursor.position, previous_cursor.position)
     time = current_cursor.time - previous_cursor.time
-    return distance / time
+    speed = distance / time
+    if speed > INVALID_SPEED_THRESHOLD:
+        logging.warning(f"Speed value of {speed} detected. This may be an error.")
+        if raise_on_threshold:
+            raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
+    return speed
 
 
 def calculate_acceleration(current_speed: float, previous_speed: float, current_time: float,
@@ -105,15 +110,8 @@ def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_threshold: bool = 
         raise ValueError("At least two points are required to calculate velocity")
 
     speeds = []
-
     for i in range(1, len(cursor_trail)):
-        current_cursor = cursor_trail[i]
-        previous_cursor = cursor_trail[i - 1]
-        speed = calculate_speed(current_cursor, previous_cursor)
-        if speed > INVALID_SPEED_THRESHOLD:
-            logging.warning(f"Speed value of {speed} detected. This may be an error.")
-            if raise_on_threshold:
-                raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
+        speed = calculate_speed(cursor_trail[i], cursor_trail[i - 1], raise_on_threshold)
         speeds.append(speed)
 
     return speeds
