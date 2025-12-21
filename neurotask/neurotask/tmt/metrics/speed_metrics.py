@@ -75,7 +75,7 @@ def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
     }
 
 
-def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo, raise_on_threshold: bool = True) -> float:
+def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo) -> float:
     if current_cursor.time <= previous_cursor.time:
         raise NonMonotonicTimeError("current_cursor.time must be greater than previous_cursor.time")
     distance = calculate_distance(current_cursor.position, previous_cursor.position)
@@ -83,8 +83,7 @@ def calculate_speed(current_cursor: CursorInfo, previous_cursor: CursorInfo, rai
     speed = distance / time
     if speed > INVALID_SPEED_THRESHOLD:
         logging.warning(f"Speed value of {speed} detected. This may be an error.")
-        if raise_on_threshold:
-            raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
+        raise InvalidSpeedError(f"Speed value of {speed} exceeds INVALID_SPEED_THRESHOLD ({INVALID_SPEED_THRESHOLD}).")
     return speed
 
 
@@ -100,19 +99,24 @@ def calculate_acceleration(current_speed: float, previous_speed: float, current_
     return acceleration
 
 
-def calculate_speeds_between_cursor_positions(trial: TMTTrial) -> List[float]:
+def calculate_speeds_between_cursor_positions(trial: TMTTrial, raise_on_error: bool = False) -> List[float]:
     cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
-    return calculate_speeds(cursor_trail_from_first_click)
+    return calculate_speeds(cursor_trail_from_first_click, raise_on_error)
 
 
-def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_threshold: bool = True) -> List[float]:
+def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_error: bool = False) -> List[float]:
     if len(cursor_trail) < 2:
         raise ValueError("At least two points are required to calculate velocity")
 
     speeds = []
     for i in range(1, len(cursor_trail)):
-        speed = calculate_speed(cursor_trail[i], cursor_trail[i - 1], raise_on_threshold)
-        speeds.append(speed)
+        try:
+            speed = calculate_speed(cursor_trail[i], cursor_trail[i - 1])
+            speeds.append(speed)
+        except (InvalidSpeedError, NonMonotonicTimeError):
+            if raise_on_error:
+                raise
+            # Si raise_on_error=False, ignorar este punto
 
     return speeds
 

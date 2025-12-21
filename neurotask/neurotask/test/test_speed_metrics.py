@@ -5,6 +5,7 @@ from neurotask.tmt.metrics.speed_metrics import (
     SpeedMetricsCalculator,
     InvalidSpeedError,
     NonMonotonicTimeError,
+    calculate_speeds,
 )
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
@@ -195,7 +196,7 @@ def test_with_prefix_adds_prefix_to_all_keys():
 
 def test_invalid_speed_raises_error():
     """
-    When speed exceeds INVALID_SPEED_THRESHOLD, InvalidSpeedError should be raised.
+    When speed exceeds INVALID_SPEED_THRESHOLD and raise_on_error=True, InvalidSpeedError should be raised.
     """
     # Create movement that exceeds threshold (8 px/ms)
     # Moving 100 pixels in 1 ms = 100 px/ms > 8 px/ms
@@ -203,10 +204,9 @@ def test_invalid_speed_raises_error():
         (0.0, 0.0, 0.0),
         (100.0, 0.0, 1.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(InvalidSpeedError, match="exceeds INVALID_SPEED_THRESHOLD"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)
 
 
 def test_mixed_acceleration_computes_abs_correctly():
@@ -258,7 +258,7 @@ def test_speed_at_threshold_is_valid():
 
 def test_non_monotonic_time_raises_error():
     """
-    When timestamps go backwards, NonMonotonicTimeError should be raised.
+    When timestamps go backwards and raise_on_error=True, NonMonotonicTimeError should be raised.
     """
     # Time goes from 0 -> 2 -> 1 (backwards)
     cursor_trail = _build_cursor_trail([
@@ -266,15 +266,14 @@ def test_non_monotonic_time_raises_error():
         (1.0, 0.0, 2.0),
         (2.0, 0.0, 1.0),  # time goes backwards
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)
 
 
 def test_equal_time_raises_non_monotonic_error():
     """
-    When two consecutive timestamps are equal, NonMonotonicTimeError should be raised.
+    When two consecutive timestamps are equal and raise_on_error=True, NonMonotonicTimeError should be raised.
     """
     # Time stays at 1.0 for two consecutive points
     cursor_trail = _build_cursor_trail([
@@ -282,7 +281,6 @@ def test_equal_time_raises_non_monotonic_error():
         (1.0, 0.0, 1.0),
         (2.0, 0.0, 1.0),  # same time as previous
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)

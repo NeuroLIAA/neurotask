@@ -262,8 +262,11 @@ def calculate_average_speed_in_states(classified_positions):
         current_cursor = classified_positions[i][1]
         current_state = classified_positions[i][0]
 
-        speed = calculate_speed(current_cursor, previous_cursor)
-        state_speeds[previous_state].append(speed)
+        try:
+            speed = calculate_speed(current_cursor, previous_cursor)
+            state_speeds[previous_state].append(speed)
+        except (InvalidSpeedError, NonMonotonicTimeError):
+            pass  # Ignorar este punto
 
         previous_cursor = current_cursor
         previous_state = current_state
