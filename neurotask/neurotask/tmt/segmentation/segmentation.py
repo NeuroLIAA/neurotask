@@ -4,13 +4,20 @@ from typing import List, Tuple, Dict, Optional
 
 import numpy as np
 
-from neurotask.tmt.metrics.speed_metrics import calculate_speeds_between_cursor_positions, calculate_speeds, InvalidSpeedError, NonMonotonicTimeError
+from neurotask.tmt.metrics.speed_metrics import (
+    calculate_speeds_between_cursor_positions_with_validity,
+    calculate_speeds,
+    calculate_speed,
+    InvalidSpeedError,
+    NonMonotonicTimeError,
+    SpeedResult
+)
 from ..metrics.distance_calculation import calculate_distance
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 
 def speed_increases_over_consecutive_points(
-        speeds: List[float],
+        speeds: List[SpeedResult],
         cursor_index: int,
         speed_threshold: float,
         consecutive_points: int
@@ -19,7 +26,7 @@ def speed_increases_over_consecutive_points(
     Determines if the speed has increased over a specified number of consecutive points beyond a given speed threshold.
 
     Parameters:
-    - speeds: List of speed values between cursor positions.
+    - speeds: List of SpeedResult values between cursor positions.
     - cursor_index: The current index in the cursor trail (starting from 0).
     - speed_threshold: The minimum increase in speed between consecutive points to consider.
     - consecutive_points: Number of consecutive points over which the speed must increase.
@@ -36,14 +43,16 @@ def speed_increases_over_consecutive_points(
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
         if i <= 0:
             return False  # Not enough data
-        current_speed = speeds[i]
-        if current_speed <= speed_threshold:
+        speed_result = speeds[i]
+        if not speed_result.is_valid:
+            return False  # Invalid speed, cannot evaluate
+        if speed_result.value <= speed_threshold:
             return False  # Speed did not increase sufficiently
     return True
 
 
 def speed_decreases_over_consecutive_points(
-        speeds: List[float],
+        speeds: List[SpeedResult],
         cursor_index: int,
         speed_threshold: float,
         consecutive_points: int
@@ -52,7 +61,7 @@ def speed_decreases_over_consecutive_points(
     Determines if the speed has decreased over a specified number of consecutive points beyond a given speed threshold.
 
     Parameters:
-    - speeds: List of speed values between cursor positions.
+    - speeds: List of SpeedResult values between cursor positions.
     - cursor_index: The current index in the cursor trail (starting from 0).
     - speed_threshold: The minimum decrease in speed between consecutive points to consider.
     - consecutive_points: Number of consecutive points over which the speed must decrease.
@@ -69,8 +78,10 @@ def speed_decreases_over_consecutive_points(
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
         if i <= 0:
             return False  # Not enough data
-        current_speed = speeds[i]
-        if current_speed > speed_threshold:
+        speed_result = speeds[i]
+        if not speed_result.is_valid:
+            return False  # Invalid speed, cannot evaluate
+        if speed_result.value > speed_threshold:
             return False  # Speed did not decrease sufficiently
     return True
 
@@ -83,7 +94,7 @@ def classify_cursor_positions_with_hesitation(
 ) -> List[Tuple[str, CursorInfo]]:
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
-    speeds = calculate_speeds_between_cursor_positions(tmt_trial)
+    speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
     over_target_flags = calculate_over_targets(cursor_trail, target_radius, tmt_trial.stimuli)
 
     current_state = 'Search'
@@ -128,7 +139,7 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
         cursor_pos = cursor_info.position
 
         if current_target_index == len(stimuli_sequence):
-            #TODO GIAN: ver si dejarlo asi, en este punto ya termino de tocar todos
+            # TODO: Review this - at this point all targets have been touched
             previous_target =  stimuli_sequence[current_target_index-1]
             previous_target_pos = previous_target.position
             over_target_flags.append((True, previous_target_pos))
@@ -249,29 +260,20 @@ def calculate_distance_in_states(classified_positions):
 
 def calculate_average_speed_in_states(classified_positions):
     state_speeds = {'Search': [], 'Travel': [], 'Hesitation': []}
-    previous_position = classified_positions[0][1].position
-    previous_time = classified_positions[0][1].time
+    previous_cursor = classified_positions[0][1]
     previous_state = classified_positions[0][0]
 
     for i in range(1, len(classified_positions)):
-        current_position = classified_positions[i][1].position
-        current_time = classified_positions[i][1].time
+        current_cursor = classified_positions[i][1]
         current_state = classified_positions[i][0]
 
-        # Calculate distance and time difference
-        distance = math.hypot(
-            current_position.x - previous_position.x,
-            current_position.y - previous_position.y
-        )
-        time_diff = current_time - previous_time
-
-        if time_diff > 0:
-            speed = distance / time_diff
+        try:
+            speed = calculate_speed(current_cursor, previous_cursor)
             state_speeds[previous_state].append(speed)
+        except (InvalidSpeedError, NonMonotonicTimeError):
+            pass  # Skip this point
 
-        # Update for next iteration
-        previous_position = current_position
-        previous_time = current_time
+        previous_cursor = current_cursor
         previous_state = current_state
 
     # Calculate average speeds

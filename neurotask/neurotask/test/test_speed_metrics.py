@@ -5,6 +5,7 @@ from neurotask.tmt.metrics.speed_metrics import (
     SpeedMetricsCalculator,
     InvalidSpeedError,
     NonMonotonicTimeError,
+    calculate_speeds,
 )
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
@@ -195,7 +196,7 @@ def test_with_prefix_adds_prefix_to_all_keys():
 
 def test_invalid_speed_raises_error():
     """
-    When speed exceeds INVALID_SPEED_THRESHOLD, InvalidSpeedError should be raised.
+    When speed exceeds INVALID_SPEED_THRESHOLD and raise_on_error=True, InvalidSpeedError should be raised.
     """
     # Create movement that exceeds threshold (8 px/ms)
     # Moving 100 pixels in 1 ms = 100 px/ms > 8 px/ms
@@ -203,10 +204,9 @@ def test_invalid_speed_raises_error():
         (0.0, 0.0, 0.0),
         (100.0, 0.0, 1.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(InvalidSpeedError, match="exceeds INVALID_SPEED_THRESHOLD"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)
 
 
 def test_mixed_acceleration_computes_abs_correctly():
@@ -258,7 +258,7 @@ def test_speed_at_threshold_is_valid():
 
 def test_non_monotonic_time_raises_error():
     """
-    When timestamps go backwards, NonMonotonicTimeError should be raised.
+    When timestamps go backwards and raise_on_error=True, NonMonotonicTimeError should be raised.
     """
     # Time goes from 0 -> 2 -> 1 (backwards)
     cursor_trail = _build_cursor_trail([
@@ -266,15 +266,14 @@ def test_non_monotonic_time_raises_error():
         (1.0, 0.0, 2.0),
         (2.0, 0.0, 1.0),  # time goes backwards
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)
 
 
 def test_equal_time_raises_non_monotonic_error():
     """
-    When two consecutive timestamps are equal, NonMonotonicTimeError should be raised.
+    When two consecutive timestamps are equal and raise_on_error=True, NonMonotonicTimeError should be raised.
     """
     # Time stays at 1.0 for two consecutive points
     cursor_trail = _build_cursor_trail([
@@ -282,7 +281,83 @@ def test_equal_time_raises_non_monotonic_error():
         (1.0, 0.0, 1.0),
         (2.0, 0.0, 1.0),  # same time as previous
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
 
     with pytest.raises(NonMonotonicTimeError, match="current_cursor.time must be greater than previous_cursor.time"):
-        _compute_metrics(trial, subject)
+        calculate_speeds(cursor_trail, raise_on_error=True)
+
+
+# =============================================================================
+# Tests for raise_on_error=False (tolerant mode)
+# =============================================================================
+
+def test_invalid_speed_ignored_when_raise_on_error_false():
+    """
+    When speed exceeds INVALID_SPEED_THRESHOLD and raise_on_error=False,
+    the invalid speed should be ignored (not added to the list).
+    """
+    # First speed = 100 px/ms (invalid), second speed = 2 px/ms (valid)
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (100.0, 0.0, 1.0),  # speed = 100 (invalid)
+        (102.0, 0.0, 2.0),  # speed = 2 (valid)
+    ])
+
+    speeds = calculate_speeds(cursor_trail, raise_on_error=False)
+
+    # Only the valid speed should be in the list
+    assert len(speeds) == 1
+    assert speeds[0] == pytest.approx(2.0)
+
+
+def test_non_monotonic_time_ignored_when_raise_on_error_false():
+    """
+    When timestamps go backwards and raise_on_error=False,
+    the invalid point should be ignored.
+    """
+    # Time: 0 -> 2 -> 1 (backwards) -> 3
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (2.0, 0.0, 2.0),   # speed = 1 (valid)
+        (3.0, 0.0, 1.0),   # time goes backwards (invalid)
+        (6.0, 0.0, 3.0),   # speed = 3 (valid, from point at t=1 to t=3)
+    ])
+
+    speeds = calculate_speeds(cursor_trail, raise_on_error=False)
+
+    # Two valid speeds should be calculated
+    assert len(speeds) == 2
+    assert speeds[0] == pytest.approx(1.0)
+    assert speeds[1] == pytest.approx(1.5)  # distance=3, time=2
+
+
+def test_mixed_valid_invalid_speeds_returns_only_valid():
+    """
+    With a mix of valid and invalid speeds, only valid ones should be returned.
+    """
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (2.0, 0.0, 1.0),    # speed = 2 (valid)
+        (102.0, 0.0, 2.0),  # speed = 100 (invalid)
+        (104.0, 0.0, 3.0),  # speed = 2 (valid)
+        (106.0, 0.0, 4.0),  # speed = 2 (valid)
+    ])
+
+    speeds = calculate_speeds(cursor_trail, raise_on_error=False)
+
+    assert len(speeds) == 3
+    assert all(s == pytest.approx(2.0) for s in speeds)
+
+
+def test_all_invalid_speeds_returns_empty_list():
+    """
+    When all speeds are invalid, an empty list should be returned.
+    """
+    cursor_trail = _build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (100.0, 0.0, 1.0),  # speed = 100 (invalid)
+        (200.0, 0.0, 2.0),  # speed = 100 (invalid)
+    ])
+
+    speeds = calculate_speeds(cursor_trail, raise_on_error=False)
+
+    assert len(speeds) == 0
