@@ -3,15 +3,16 @@ from typing import Dict, Any, Tuple, List, NamedTuple
 
 import numpy as np
 
+from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
+from neurotask.tmt.metrics.distance_calculation import calculate_distance
+from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTSubject, TMTTarget
+from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
+
 
 class SpeedResult(NamedTuple):
     """Result of a speed calculation with validity flag."""
     is_valid: bool
     value: float
-from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from neurotask.tmt.metrics.distance_calculation import calculate_distance
-from neurotask.tmt.model.tmt_model import TMTTrial, CursorInfo, TMTSubject, TMTTarget
-from neurotask.tmt.config import INVALID_SPEED_THRESHOLD
 
 
 class InvalidSpeedError(Exception):
