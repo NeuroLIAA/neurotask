@@ -32,7 +32,7 @@ class SpeedMetricsCalculator(BaseMetricCalculator):
                     speed_threshold, consecutive_points) -> dict:
         speed_metrics = compute_speed_and_acceleration_metrics(trial)
 
-        # Aplicar el método get_metric_name a cada clave del diccionario
+        # Apply get_metric_name method to each key in the dictionary
         for key, value in speed_metrics.items():
             metrics[self.get_metric_name(key)] = value
 
@@ -162,17 +162,17 @@ def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_error: bool = Fals
         except (InvalidSpeedError, NonMonotonicTimeError):
             if raise_on_error:
                 raise
-            # Si raise_on_error=False, ignorar este punto
+            # If raise_on_error=False, skip this point
 
     return speeds
 
 
 def calculate_accelerations_between_cursor_positions(trial: TMTTrial) -> List[float]:
     """
-    Calcula la aceleración entre cada posición del cursor.
+    Calculate acceleration between each cursor position.
 
     Returns:
-    - Lista de aceleraciones entre puntos consecutivos.
+        List of accelerations between consecutive points.
     """
     cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
 
@@ -182,10 +182,10 @@ def calculate_accelerations_between_cursor_positions(trial: TMTTrial) -> List[fl
 
     accelerations = []
 
-    # Calculamos las velocidades primero
+    # Calculate speeds first
     speeds = calculate_speeds_between_cursor_positions(trial)
 
-    # Ahora calculamos la aceleración entre las velocidades
+    # Now calculate acceleration between speeds
     for i in range(1, len(speeds)):
         current_cursor = cursor_trail_from_first_click[i + 1]  # i+1 porque estamos viendo del tercer punto en adelante
         previous_cursor = cursor_trail_from_first_click[i]
