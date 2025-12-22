@@ -151,20 +151,21 @@ def calculate_speeds_between_cursor_positions_with_validity(trial: TMTTrial) -> 
 
 
 def calculate_speeds(cursor_trail: List[CursorInfo], raise_on_error: bool = False) -> List[float]:
-    if len(cursor_trail) < 2:
-        raise ValueError("At least two points are required to calculate velocity")
+    speed_results = calculate_speeds_with_validity(cursor_trail)
 
-    speeds = []
-    for i in range(1, len(cursor_trail)):
-        try:
-            speed = calculate_speed(cursor_trail[i], cursor_trail[i - 1])
-            speeds.append(speed)
-        except (InvalidSpeedError, NonMonotonicTimeError):
-            if raise_on_error:
-                raise
-            # If raise_on_error=False, skip this point
+    # Assert to validate alignment
+    assert len(speed_results) == len(cursor_trail) - 1, \
+        f"Speed results length ({len(speed_results)}) must equal cursor_trail length - 1 ({len(cursor_trail) - 1})"
 
-    return speeds
+    if raise_on_error:
+        # If raise_on_error=True and there's any invalid result, recalculate to raise the exception
+        for i, result in enumerate(speed_results):
+            if not result.is_valid:
+                # Recalculate to trigger the original exception
+                calculate_speed(cursor_trail[i + 1], cursor_trail[i])
+
+    # Return only valid speeds
+    return [result.value for result in speed_results if result.is_valid]
 
 
 def calculate_accelerations_between_cursor_positions(trial: TMTTrial) -> List[float]:
@@ -174,26 +175,33 @@ def calculate_accelerations_between_cursor_positions(trial: TMTTrial) -> List[fl
     Returns:
         List of accelerations between consecutive points.
     """
-    cursor_trail_from_first_click = trial.get_cursor_trail_from_start()
+    cursor_trail = trial.get_cursor_trail_from_start()
 
-    if len(cursor_trail_from_first_click) < 3:
-        print(cursor_trail_from_first_click)
+    if len(cursor_trail) < 3:
         raise ValueError("At least three points are required to calculate acceleration")
 
+    speed_results = calculate_speeds_between_cursor_positions_with_validity(trial)
+
+    # Assert to validate index alignment
+    assert len(speed_results) == len(cursor_trail) - 1, \
+        f"Speed results length ({len(speed_results)}) must equal cursor_trail length - 1 ({len(cursor_trail) - 1})"
+
     accelerations = []
+    for i in range(1, len(speed_results)):
+        # Only calculate acceleration if both speeds are valid
+        if not speed_results[i].is_valid or not speed_results[i - 1].is_valid:
+            continue  # Skip this acceleration
 
-    # Calculate speeds first
-    speeds = calculate_speeds_between_cursor_positions(trial)
+        current_cursor = cursor_trail[i + 1]
+        previous_cursor = cursor_trail[i]
 
-    # Now calculate acceleration between speeds
-    for i in range(1, len(speeds)):
-        current_cursor = cursor_trail_from_first_click[i + 1]  # i+1 porque estamos viendo del tercer punto en adelante
-        previous_cursor = cursor_trail_from_first_click[i]
-        current_speed = speeds[i]
-        previous_speed = speeds[i - 1]
+        # Verify monotonic time before calculating
+        if current_cursor.time <= previous_cursor.time:
+            continue  # Skip non-monotonic time
 
         acceleration = calculate_acceleration(
-            current_speed, previous_speed, current_cursor.time, previous_cursor.time
+            speed_results[i].value, speed_results[i - 1].value,
+            current_cursor.time, previous_cursor.time
         )
         accelerations.append(acceleration)
 
