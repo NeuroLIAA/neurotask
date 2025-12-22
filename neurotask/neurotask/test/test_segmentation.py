@@ -53,9 +53,9 @@ class TestClassifyCursorPositionsWithHesitation:
 
     def test_returns_correct_states_with_valid_data(self):
         """
-        Verifica que la clasificación de estados sea correcta con datos válidos.
+        Verify that state classification is correct with valid data.
         """
-        # Movimiento válido: velocidades de 2 px/ms (< 8.0 threshold)
+        # Valid movement: speeds of 2 px/ms (< 8.0 threshold)
         cursor_trail = _build_cursor_trail([
             (0.0, 0.0, 0.0),
             (2.0, 0.0, 1.0),   # speed = 2
@@ -72,20 +72,20 @@ class TestClassifyCursorPositionsWithHesitation:
             consecutive_points=2
         )
 
-        # Verifica estructura correcta
+        # Verify correct structure
         assert len(result) == len(cursor_trail)
         
-        # Cada elemento es (estado, CursorInfo)
+        # Each element is (state, CursorInfo)
         for state, cursor_info in result:
             assert state in ['Search', 'Travel', 'Hesitation']
             assert isinstance(cursor_info, CursorInfo)
 
     def test_handles_invalid_speed_gracefully(self):
         """
-        Con velocidades inválidas, no lanza excepción y devuelve clasificación.
-        Las velocidades inválidas son marcadas como is_valid=False en SpeedResult.
+        With invalid speeds, does not raise exception and returns classification.
+        Invalid speeds are marked as is_valid=False in SpeedResult.
         """
-        # Trial con velocidad inválida (100 px/ms > 8.0)
+        # Trial with invalid speed (100 px/ms > 8.0)
         cursor_trail = _build_cursor_trail([
             (0.0, 0.0, 0.0),
             (100.0, 0.0, 1.0),  # speed = 100 (invalid)
@@ -94,7 +94,7 @@ class TestClassifyCursorPositionsWithHesitation:
         ])
         trial = _build_trial(cursor_trail)
 
-        # No debe lanzar excepción
+        # Should not raise exception
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
@@ -102,20 +102,20 @@ class TestClassifyCursorPositionsWithHesitation:
             consecutive_points=2
         )
 
-        # Verifica estructura correcta
+        # Verify correct structure
         assert len(result) == len(cursor_trail)
         
-        # Cada elemento es (estado, CursorInfo)
+        # Each element is (state, CursorInfo)
         for state, cursor_info in result:
             assert state in ['Search', 'Travel', 'Hesitation']
             assert isinstance(cursor_info, CursorInfo)
 
     def test_handles_non_monotonic_time_gracefully(self):
         """
-        Con tiempos no monótonos, no lanza excepción y devuelve clasificación.
-        Los puntos con tiempo no monótono son marcados como is_valid=False en SpeedResult.
+        With non-monotonic times, does not raise exception and returns classification.
+        Points with non-monotonic time are marked as is_valid=False in SpeedResult.
         """
-        # Time: 0 -> 2 -> 1 (retrocede)
+        # Time: 0 -> 2 -> 1 (goes backwards)
         cursor_trail = _build_cursor_trail([
             (0.0, 0.0, 0.0),
             (2.0, 0.0, 2.0),
@@ -124,7 +124,7 @@ class TestClassifyCursorPositionsWithHesitation:
         ])
         trial = _build_trial(cursor_trail)
 
-        # No debe lanzar excepción
+        # Should not raise exception
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
@@ -132,21 +132,21 @@ class TestClassifyCursorPositionsWithHesitation:
             consecutive_points=2
         )
 
-        # Verifica estructura correcta
+        # Verify correct structure
         assert len(result) == len(cursor_trail)
         
-        # Cada elemento es (estado, CursorInfo)
+        # Each element is (state, CursorInfo)
         for state, cursor_info in result:
             assert state in ['Search', 'Travel', 'Hesitation']
             assert isinstance(cursor_info, CursorInfo)
 
     def test_first_point_is_search_on_target(self):
         """
-        Verifica que el primer punto sea Search cuando está sobre el target.
+        Verify that the first point is Search when over the target.
         """
-        # Cursor empieza sobre el target (0,0)
+        # Cursor starts over the target (0,0)
         cursor_trail = _build_cursor_trail([
-            (0.0, 0.0, 0.0),   # sobre target 1
+            (0.0, 0.0, 0.0),   # over target 1
             (2.0, 0.0, 1.0),
             (4.0, 0.0, 2.0),
         ])
@@ -159,5 +159,5 @@ class TestClassifyCursorPositionsWithHesitation:
             consecutive_points=2
         )
 
-        # El primer punto debe ser Search
+        # First point should be Search
         assert result[0][0] == 'Search'

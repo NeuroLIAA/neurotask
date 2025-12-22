@@ -139,7 +139,7 @@ def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> Lis
         cursor_pos = cursor_info.position
 
         if current_target_index == len(stimuli_sequence):
-            #TODO GIAN: ver si dejarlo asi, en este punto ya termino de tocar todos
+            # TODO: Review this - at this point all targets have been touched
             previous_target =  stimuli_sequence[current_target_index-1]
             previous_target_pos = previous_target.position
             over_target_flags.append((True, previous_target_pos))
@@ -271,7 +271,7 @@ def calculate_average_speed_in_states(classified_positions):
             speed = calculate_speed(current_cursor, previous_cursor)
             state_speeds[previous_state].append(speed)
         except (InvalidSpeedError, NonMonotonicTimeError):
-            pass  # Ignorar este punto
+            pass  # Skip this point
 
         previous_cursor = current_cursor
         previous_state = current_state
