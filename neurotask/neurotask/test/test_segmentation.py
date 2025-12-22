@@ -1,5 +1,3 @@
-import pytest
-
 from neurotask.tmt.segmentation.segmentation import classify_cursor_positions_with_hesitation
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
