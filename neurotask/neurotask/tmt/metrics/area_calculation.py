@@ -66,6 +66,13 @@ class DifferenceFromIdealArea(BaseMetricCalculator):
             area = area_between_real_and_ideal(cursor_trail)
             areas.append(area)
 
-        metrics[self.get_metric_name('area_difference_from_ideal')] = float(np.mean(areas))
+        if areas:
+            metrics[self.get_metric_name('area_difference_from_ideal')] = float(np.mean(areas))
+        else:
+            raise ValueError(
+                f"Cannot calculate area_difference_from_ideal: No valid target segments found. "
+                f"Trial {trial.id} has {len(trails_between_targets)} trails_between_targets, "
+                f"but none had valid targets (all targets were None or segments were invalid)."
+            )
 
         return metrics
