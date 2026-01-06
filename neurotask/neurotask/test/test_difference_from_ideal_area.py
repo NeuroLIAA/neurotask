@@ -14,15 +14,6 @@ from neurotask.tmt.model.tmt_model import (
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
 
-def _build_trails_between_targets(
-        targets_and_segments: list[tuple[TMTTarget, list[CursorInfo]]]
-) -> list[tuple[TMTTarget, list[CursorInfo]]]:
-    """
-    Build trails_between_targets manually for testing.
-    """
-    return targets_and_segments
-
-
 def _compute_metrics(
         trial: TMTTrial,
         subject: TMTSubject,
@@ -60,7 +51,7 @@ def test_straight_line_segment_returns_zero_area():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -82,7 +73,7 @@ def test_deviated_path_returns_correct_area():
         (2.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(2.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -112,10 +103,10 @@ def test_multiple_segments_returns_average_area():
     
     target1 = TMTTarget("1", Coordinate(10.0, 0.0))
     target2 = TMTTarget("2", Coordinate(2.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([
+    trails_between_targets = [
         (target1, segment1),
         (target2, segment2),
-    ])
+    ]
     
     trial, subject = build_trial_and_subject([])
     
@@ -137,7 +128,7 @@ def test_triangle_deviation_returns_correct_area():
         (2.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(2.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -181,7 +172,7 @@ def test_segment_with_single_point():
         (0.0, 0.0, 0.0),
     ])
     target = TMTTarget("1", Coordinate(0.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -199,7 +190,7 @@ def test_segment_with_two_points():
         (5.0, 0.0, 1.0),
     ])
     target = TMTTarget("1", Coordinate(5.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -218,7 +209,7 @@ def test_returns_area_difference_from_ideal_metric():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -238,7 +229,7 @@ def test_with_prefix_adds_prefix_to_metric_key():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -261,7 +252,7 @@ def test_returns_float_type():
         (2.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(2.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -283,7 +274,7 @@ def test_square_deviation_returns_correct_area():
         (2.0, 0.0, 3.0),
     ])
     target = TMTTarget("1", Coordinate(2.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -304,7 +295,7 @@ def test_colinear_points_returns_zero():
         (2.0, 2.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(2.0, 2.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     

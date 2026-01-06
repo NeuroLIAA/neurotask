@@ -15,15 +15,6 @@ from neurotask.tmt.model.tmt_model import (
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
 
-def _build_trails_between_targets(
-        targets_and_segments: list[tuple[TMTTarget, list[CursorInfo]]]
-) -> list[tuple[TMTTarget, list[CursorInfo]]]:
-    """
-    Build trails_between_targets manually for testing.
-    """
-    return targets_and_segments
-
-
 def _compute_metrics(
         trial: TMTTrial,
         subject: TMTSubject,
@@ -63,7 +54,7 @@ def test_straight_line_segment_returns_zero_difference():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -87,7 +78,7 @@ def test_deviated_path_returns_correct_difference():
         (0.0, 4.0, 3.0),   # distance = 3
     ])
     target = TMTTarget("1", Coordinate(0.0, 4.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -120,10 +111,10 @@ def test_multiple_segments_returns_average_difference():
     
     target1 = TMTTarget("1", Coordinate(15.0, 0.0))
     target2 = TMTTarget("2", Coordinate(3.0, 4.0))
-    trails_between_targets = _build_trails_between_targets([
+    trails_between_targets = [
         (target1, segment1),
         (target2, segment2),
-    ])
+    ]
     
     trial, subject = build_trial_and_subject([])
     
@@ -169,7 +160,7 @@ def test_segment_with_single_point():
         (0.0, 0.0, 0.0),
     ])
     target = TMTTarget("1", Coordinate(0.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -189,7 +180,7 @@ def test_segment_with_two_points():
         (5.0, 0.0, 1.0),
     ])
     target = TMTTarget("1", Coordinate(5.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -208,7 +199,7 @@ def test_returns_distance_difference_from_ideal_metric():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -228,7 +219,7 @@ def test_with_prefix_adds_prefix_to_metric_key():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -257,7 +248,7 @@ def test_zigzag_segment_returns_correct_difference():
         (4.0, 0.0, 4.0),   # distance = sqrt(2)
     ])
     target = TMTTarget("1", Coordinate(4.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -284,7 +275,7 @@ def test_pythagorean_triangle_segment():
         (3.0, 4.0, 2.0),   # distance = 4
     ])
     target = TMTTarget("1", Coordinate(3.0, 4.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -304,7 +295,7 @@ def test_returns_float_type():
         (10.0, 0.0, 2.0),
     ])
     target = TMTTarget("1", Coordinate(10.0, 0.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
@@ -328,7 +319,7 @@ def test_ideal_path_has_zero_difference():
         (6.0, 8.0, 2.0),   # distance = 5
     ])
     target = TMTTarget("1", Coordinate(6.0, 8.0))
-    trails_between_targets = _build_trails_between_targets([(target, segment)])
+    trails_between_targets = [(target, segment)]
     
     trial, subject = build_trial_and_subject([])
     
