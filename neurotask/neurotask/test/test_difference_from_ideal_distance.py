@@ -12,50 +12,7 @@ from neurotask.tmt.model.tmt_model import (
     TMTTrial,
     TrialType,
 )
-
-
-# =============================================================================
-# Helper functions
-# =============================================================================
-
-def _build_cursor_trail(positions_and_times: list[tuple[float, float, float]]) -> list[CursorInfo]:
-    """
-    Build a cursor trail from a list of (x, y, time) tuples.
-    """
-    return [
-        CursorInfo(Coordinate(x, y), t)
-        for x, y, t in positions_and_times
-    ]
-
-
-def _build_trial_and_subject(
-        cursor_trail: list[CursorInfo],
-        targets: list[TMTTarget] = None,
-        target_radius: float = 1.0,
-) -> tuple[TMTTrial, TMTSubject]:
-    """
-    Build a trial and subject with the given cursor trail and targets.
-    """
-    if targets is None:
-        targets = [TMTTarget("0", Coordinate(0.0, 0.0))]
-
-    trial = TMTTrial(
-        stimuli=targets,
-        cursor_trail=cursor_trail,
-        trial_type=TrialType.PART_A,
-        id="test_trial",
-        order_of_appearance=1,
-        rt=cursor_trail[-1].time if cursor_trail else 0.0,
-    )
-
-    subject = TMTSubject(
-        training_trials=[],
-        testing_trials=[trial],
-        target_radius=target_radius,
-        canvas_size=None,
-    )
-
-    return trial, subject
+from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
 
 def _build_trails_between_targets(
@@ -100,7 +57,7 @@ def test_straight_line_segment_returns_zero_difference():
     # Actual distance = 5 + 5 = 10
     # Ideal distance = 10 (straight line)
     # Difference = |10 - 10| = 0
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
@@ -108,7 +65,7 @@ def test_straight_line_segment_returns_zero_difference():
     target = TMTTarget("1", Coordinate(10.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -123,7 +80,7 @@ def test_deviated_path_returns_correct_difference():
     # Actual distance = 3 + 4 + 3 = 10
     # Ideal distance = sqrt((0-0)² + (4-0)²) = 4
     # Difference = |10 - 4| = 6
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 0.0, 1.0),   # distance = 3
         (3.0, 4.0, 2.0),   # distance = 4
@@ -132,7 +89,7 @@ def test_deviated_path_returns_correct_difference():
     target = TMTTarget("1", Coordinate(0.0, 4.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -146,7 +103,7 @@ def test_multiple_segments_returns_average_difference():
     """
     # Segment 1: (0,0) -> (5,0) -> (10,0) -> (15,0)
     # Actual: 5 + 5 + 5 = 15, Ideal: 15, Difference: 0
-    segment1 = _build_cursor_trail([
+    segment1 = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
@@ -155,7 +112,7 @@ def test_multiple_segments_returns_average_difference():
     
     # Segment 2: (0,0) -> (3,0) -> (3,4)
     # Actual: 3 + 4 = 7, Ideal: 5, Difference: |7 - 5| = 2
-    segment2 = _build_cursor_trail([
+    segment2 = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 0.0, 1.0),
         (3.0, 4.0, 2.0),
@@ -168,7 +125,7 @@ def test_multiple_segments_returns_average_difference():
         (target2, segment2),
     ])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -180,7 +137,7 @@ def test_empty_trails_between_targets_raises_error():
     """
     Lista vacía debe lanzar ValueError con mensaje descriptivo.
     """
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     trails_between_targets = []
     
     with pytest.raises(ValueError, match="Cannot calculate distance_difference_from_ideal"):
@@ -191,13 +148,13 @@ def test_all_targets_none_raises_error():
     """
     Todos los targets son None, debe lanzar ValueError.
     """
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
     ])
     trails_between_targets = [(None, segment)]
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     with pytest.raises(ValueError, match="Cannot calculate distance_difference_from_ideal"):
         _compute_metrics(trial, subject, trails_between_targets)
@@ -208,13 +165,13 @@ def test_segment_with_single_point():
     Segmento con un solo punto (debe funcionar, diferencia = 0).
     """
     # Single point: actual distance = 0, ideal distance = 0, difference = 0
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
     ])
     target = TMTTarget("1", Coordinate(0.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -227,14 +184,14 @@ def test_segment_with_two_points():
     """
     # Two points in straight line: (0,0) -> (5,0)
     # Actual: 5, Ideal: 5, Difference: 0
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
     ])
     target = TMTTarget("1", Coordinate(5.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -245,7 +202,7 @@ def test_returns_distance_difference_from_ideal_metric():
     """
     Verificar que retorna la métrica con la clave correcta.
     """
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
@@ -253,7 +210,7 @@ def test_returns_distance_difference_from_ideal_metric():
     target = TMTTarget("1", Coordinate(10.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -265,7 +222,7 @@ def test_with_prefix_adds_prefix_to_metric_key():
     """
     Con prefijo, la clave debe tener el prefijo.
     """
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
@@ -273,7 +230,7 @@ def test_with_prefix_adds_prefix_to_metric_key():
     target = TMTTarget("1", Coordinate(10.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets, prefix="non_cut_")
     
@@ -292,7 +249,7 @@ def test_zigzag_segment_returns_correct_difference():
     # Actual distance = 4 * sqrt(2) ≈ 5.657
     # Ideal distance = 4 (straight line from (0,0) to (4,0))
     # Difference = |5.657 - 4| ≈ 1.657
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (1.0, 1.0, 1.0),   # distance = sqrt(2)
         (2.0, 0.0, 2.0),   # distance = sqrt(2)
@@ -302,7 +259,7 @@ def test_zigzag_segment_returns_correct_difference():
     target = TMTTarget("1", Coordinate(4.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -321,7 +278,7 @@ def test_pythagorean_triangle_segment():
     # Actual distance = 3 + 4 = 7
     # Ideal distance = 5 (hypotenuse)
     # Difference = |7 - 5| = 2
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 0.0, 1.0),   # distance = 3
         (3.0, 4.0, 2.0),   # distance = 4
@@ -329,7 +286,7 @@ def test_pythagorean_triangle_segment():
     target = TMTTarget("1", Coordinate(3.0, 4.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -341,7 +298,7 @@ def test_returns_float_type():
     """
     Verificar que el resultado es siempre un float.
     """
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
@@ -349,7 +306,7 @@ def test_returns_float_type():
     target = TMTTarget("1", Coordinate(10.0, 0.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -365,7 +322,7 @@ def test_ideal_path_has_zero_difference():
     # Actual: sqrt(3²+4²) + sqrt(3²+4²) = 5 + 5 = 10
     # Ideal: sqrt(6²+8²) = 10
     # Difference: 0
-    segment = _build_cursor_trail([
+    segment = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 4.0, 1.0),   # distance = 5
         (6.0, 8.0, 2.0),   # distance = 5
@@ -373,7 +330,7 @@ def test_ideal_path_has_zero_difference():
     target = TMTTarget("1", Coordinate(6.0, 8.0))
     trails_between_targets = _build_trails_between_targets([(target, segment)])
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     
@@ -385,13 +342,13 @@ def test_mixed_valid_and_none_targets():
     Mezcla de targets válidos y None, solo debe contar los válidos.
     """
     # Valid segment
-    segment1 = _build_cursor_trail([
+    segment1 = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
     ])
     
     # Segment with None target (should be skipped)
-    segment2 = _build_cursor_trail([
+    segment2 = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 4.0, 1.0),
     ])
@@ -402,7 +359,7 @@ def test_mixed_valid_and_none_targets():
         (None, segment2),  # This should be skipped
     ]
     
-    trial, subject = _build_trial_and_subject([])
+    trial, subject = build_trial_and_subject([])
     
     metrics = _compute_metrics(trial, subject, trails_between_targets)
     

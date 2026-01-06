@@ -12,51 +12,7 @@ from neurotask.tmt.model.tmt_model import (
     TMTTrial,
     TrialType,
 )
-
-
-# =============================================================================
-# Helper functions
-# =============================================================================
-
-def _build_cursor_trail(positions_and_times: list[tuple[float, float, float]]) -> list[CursorInfo]:
-    """
-    Build a cursor trail from a list of (x, y, time) tuples.
-    """
-    return [
-        CursorInfo(Coordinate(x, y), t)
-        for x, y, t in positions_and_times
-    ]
-
-
-def _build_trial_and_subject(
-        cursor_trail: list[CursorInfo],
-        with_custom_start: bool = False,
-        start: CursorInfo = None,
-) -> tuple[TMTTrial, TMTSubject]:
-    """
-    Build a minimal trial and subject with the given cursor trail.
-    """
-    targets = [TMTTarget("0", Coordinate(0.0, 0.0))]
-
-    trial = TMTTrial(
-        stimuli=targets,
-        cursor_trail=cursor_trail,
-        trial_type=TrialType.PART_A,
-        id="test_trial",
-        order_of_appearance=1,
-        rt=cursor_trail[-1].time if cursor_trail else 0.0,
-        with_custom_start=with_custom_start,
-        start=start,
-    )
-
-    subject = TMTSubject(
-        training_trials=[],
-        testing_trials=[trial],
-        target_radius=1.0,
-        canvas_size=None,
-    )
-
-    return trial, subject
+from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
 
 def _compute_metrics(trial: TMTTrial, subject: TMTSubject, prefix: str = None) -> dict:
@@ -85,13 +41,13 @@ def test_straight_line_returns_correct_distance():
     """
     # Horizontal line: 0,0 -> 5,0 -> 10,0 -> 15,0
     # Total distance = 5 + 5 + 5 = 15
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (5.0, 0.0, 1.0),
         (10.0, 0.0, 2.0),
         (15.0, 0.0, 3.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -104,13 +60,13 @@ def test_multiple_points_returns_sum_of_distances():
     """
     # Path: (0,0) -> (3,0) -> (3,4) -> (0,4)
     # Distances: 3 + 4 + 3 = 10
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 0.0, 1.0),   # distance = 3
         (3.0, 4.0, 2.0),   # distance = 4
         (0.0, 4.0, 3.0),   # distance = 3
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -124,12 +80,12 @@ def test_pythagorean_triangle_returns_correct_distance():
     # Right triangle: (0,0) -> (3,0) -> (3,4)
     # Distances: sqrt(3²+0²) + sqrt(0²+4²) = 3 + 4 = 7
     # Note: This is NOT the hypotenuse (5), but the sum of the two legs
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 0.0, 1.0),   # distance = 3
         (3.0, 4.0, 2.0),   # distance = 4
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -141,7 +97,7 @@ def test_empty_trail_returns_zero():
     Trail vacío debe retornar 0.0.
     """
     cursor_trail = []
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -152,10 +108,10 @@ def test_single_point_returns_zero():
     """
     Un solo punto debe retornar 0.0 (no hay distancia entre puntos).
     """
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -167,11 +123,11 @@ def test_two_points_returns_distance():
     Dos puntos, verificar distancia euclidiana correcta.
     """
     # Distance between (0,0) and (3,4) = sqrt(3² + 4²) = 5
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 4.0, 1.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -185,7 +141,7 @@ def test_with_custom_start_only_counts_from_start():
     # Full trail: (0,0) -> (5,0) -> (10,0) -> (15,0)
     # Start at (10,0), so only (10,0) -> (15,0) should count
     # Distance = 5
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),   # Before start
         (5.0, 0.0, 1.0),   # Before start
         (10.0, 0.0, 2.0),  # Start point
@@ -193,7 +149,7 @@ def test_with_custom_start_only_counts_from_start():
     ])
     
     start_point = CursorInfo(Coordinate(10.0, 0.0), 2.0)
-    trial, subject = _build_trial_and_subject(
+    trial, subject = build_trial_and_subject(
         cursor_trail,
         with_custom_start=True,
         start=start_point,
@@ -209,12 +165,12 @@ def test_returns_total_distance_metric():
     """
     Verificar que retorna la métrica con la clave correcta (total_distance).
     """
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (1.0, 0.0, 1.0),
         (2.0, 0.0, 2.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -226,12 +182,12 @@ def test_with_prefix_adds_prefix_to_metric_key():
     """
     Con prefijo, la clave debe tener el prefijo (ej: non_cut_total_distance).
     """
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (2.0, 0.0, 1.0),
         (4.0, 0.0, 2.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject, prefix="non_cut_")
 
@@ -248,14 +204,14 @@ def test_zigzag_path_returns_correct_distance():
     """
     # Zigzag: (0,0) -> (1,1) -> (2,0) -> (3,1) -> (4,0)
     # Distances: sqrt(2) + sqrt(2) + sqrt(2) + sqrt(2) = 4*sqrt(2) ≈ 5.657
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (1.0, 1.0, 1.0),   # distance = sqrt(2)
         (2.0, 0.0, 2.0),   # distance = sqrt(2)
         (3.0, 1.0, 3.0),   # distance = sqrt(2)
         (4.0, 0.0, 4.0),   # distance = sqrt(2)
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -267,11 +223,11 @@ def test_returns_float_type():
     """
     Verificar que el resultado es siempre un float.
     """
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (1.0, 0.0, 1.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -284,13 +240,13 @@ def test_vertical_line_returns_correct_distance():
     """
     # Vertical line: (0,0) -> (0,5) -> (0,10) -> (0,15)
     # Total distance = 5 + 5 + 5 = 15
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (0.0, 5.0, 1.0),
         (0.0, 10.0, 2.0),
         (0.0, 15.0, 3.0),
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
@@ -305,12 +261,12 @@ def test_diagonal_line_returns_correct_distance():
     # Distance 1: sqrt(3² + 4²) = 5
     # Distance 2: sqrt(3² + 4²) = 5
     # Total = 10
-    cursor_trail = _build_cursor_trail([
+    cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (3.0, 4.0, 1.0),   # distance = 5
         (6.0, 8.0, 2.0),   # distance = 5
     ])
-    trial, subject = _build_trial_and_subject(cursor_trail)
+    trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
