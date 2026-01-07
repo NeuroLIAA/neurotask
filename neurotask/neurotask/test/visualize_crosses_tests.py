@@ -63,6 +63,14 @@ def plot_crosses_simple(
     colors: Sequence[str] | None = None,
     linewidth_trail: float = 2.0,
     linewidth_cross: float = 4.0,
+    # --- Added from the "old" plotting function ---
+    canvas_size: int | None = None,
+    invert_y: bool = False,
+    targets: Sequence[TMTTarget] | None = None,
+    target_radius: float | None = None,
+    show_cross_endpoints: bool = True,
+    cross_endpoints_size: float = 70.0,
+    cross_endpoints_edgecolor: str = "k",
 ):
     """
     Plot:
@@ -70,6 +78,11 @@ def plot_crosses_simple(
       2) Highlight segments participating in each detected cross (using `crosses`).
       3) Visually separate overlapped crosses by jittering labels (not geometry).
       4) Side panel listing cross index -> color (+ time_gap).
+
+    Additions (ported from the old plotter):
+      - Optional canvas sizing and inverted Y (typical of js canvas coords).
+      - Optional targets drawing as circles + content text.
+      - Optional marking of cross segment endpoints (like the old yellow dots).
 
     expected_crosses:
       If provided, it is shown in the title as "(expected=N)".
@@ -94,10 +107,17 @@ def plot_crosses_simple(
 
     # --- 2) Highlight crossing segments + 3) jitter labels ---
     styles: List[CrossStyle] = []
+
+    # Collect endpoints (old behavior): mark the 4 endpoints per cross
+    endpoints_x: List[float] = []
+    endpoints_y: List[float] = []
+    endpoints_colors: List[str] = []
+
     for i, (seg1, seg2, time_gap_ms) in enumerate(crosses, start=1):
         color = colors[(i - 1) % len(colors)]
         styles.append(CrossStyle(index=i, color=color))
 
+        # highlight segments
         for seg in (seg1, seg2):
             p1, p2 = seg
             ax.plot(
@@ -108,6 +128,13 @@ def plot_crosses_simple(
                 color=color,
             )
 
+        # optional: mark endpoints (ported from old plotter)
+        if show_cross_endpoints:
+            for p in (seg1[0], seg1[1], seg2[0], seg2[1]):
+                endpoints_x.append(p.x)
+                endpoints_y.append(p.y)
+
+        # label near midpoint of seg1 (jittered)
         mx, my = _segment_midpoint(seg1)
         jx, jy = _jitter_for_index(i, scale=0.08)
         ax.annotate(
@@ -119,19 +146,51 @@ def plot_crosses_simple(
             bbox=dict(boxstyle="round,pad=0.2", fc="white", ec=color, alpha=0.9),
         )
 
+    if show_cross_endpoints and endpoints_x:
+        ax.scatter(
+            endpoints_x,
+            endpoints_y,
+            c="yellow",              # <- fijo como antes
+            s=140,                   # <- más grande
+            zorder=20,               # <- bien arriba
+            linewidths=2.0,          # <- borde marcado
+            edgecolor="black",
+            alpha=1.0,               # <- sin transparencia
+            marker="o",
+            label="Cross endpoints", # opcional
+        )
+    # --- Optional: targets (ported from old plotter) ---
+    if targets is not None and target_radius is not None:
+        for tgt in targets:
+            x, y = tgt.position.x, tgt.position.y
+            circle = plt.Circle((x, y), target_radius, color="grey", alpha=0.35, zorder=3)
+            ax.add_patch(circle)
+            ax.text(
+                x, y, str(getattr(tgt, "content", "")),
+                color="black", fontsize=10, ha="center", va="center", zorder=4
+            )
+
     # --- Title (includes expected) ---
     detected = len(crosses)
-    if expected_crosses is None:
-        suffix = f"(detected={detected})"
-    else:
-        suffix = f"(detected={detected}, expected={expected_crosses})"
-
+    suffix = f"(detected={detected})" if expected_crosses is None else f"(detected={detected}, expected={expected_crosses})"
     ax.set_title(title.strip() + (" — " if title.strip() else "") + suffix, fontweight="bold")
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
     ax.grid(True, alpha=0.2)
     ax.set_aspect("equal", adjustable="box")
+
+    # --- Optional: canvas coordinate behavior (ported from old plotter) ---
+    if canvas_size is not None:
+        ax.set_xlim(0, canvas_size)
+        if invert_y:
+            ax.set_ylim(canvas_size, 0)
+        else:
+            ax.set_ylim(0, canvas_size)
+    elif invert_y:
+        # If caller wants inverted Y but no explicit canvas_size, invert current limits.
+        ymin, ymax = ax.get_ylim()
+        ax.set_ylim(ymax, ymin)
 
     # --- 4) Side panel: list cross index -> color (+ gap) ---
     ax_side.axis("off")
@@ -155,7 +214,6 @@ def plot_crosses_simple(
 
     plt.tight_layout()
     return fig, (ax, ax_side)
-
 
 
 def main(output_dir: str = "crosses_visualizations") -> None:
