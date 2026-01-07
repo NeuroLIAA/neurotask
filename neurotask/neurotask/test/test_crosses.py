@@ -3,12 +3,8 @@ import numpy as np
 
 from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalculator
 from neurotask.tmt.model.tmt_model import (
-    Coordinate,
-    CursorInfo,
     TMTSubject,
-    TMTTarget,
     TMTTrial,
-    TrialType,
 )
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 

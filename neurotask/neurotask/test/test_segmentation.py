@@ -4,7 +4,6 @@ from neurotask.tmt.model.tmt_model import (
     CursorInfo,
     TMTTarget,
     TMTTrial,
-    TrialType,
 )
 from neurotask.test.test_helpers import build_cursor_trail, build_trial
 

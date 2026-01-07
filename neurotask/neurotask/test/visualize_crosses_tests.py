@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from neurotask.tmt.crosses.crosses import calculate_crosses_for_trial
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
-from neurotask.tmt.model.tmt_model import Coordinate
+from neurotask.tmt.model.tmt_model import Coordinate, TMTTarget
 
 Segment = Tuple[Coordinate, Coordinate]
 Cross = Tuple[Segment, Segment, float]  # (seg1, seg2, time_gap_ms)

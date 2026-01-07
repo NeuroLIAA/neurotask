@@ -6,11 +6,9 @@ from neurotask.tmt.metrics.difference_from_ideal_distance import (
 from neurotask.tmt.metrics.targets_touched import get_all_trails_between_targets
 from neurotask.tmt.model.tmt_model import (
     Coordinate,
-    CursorInfo,
     TMTSubject,
     TMTTarget,
     TMTTrial,
-    TrialType,
 )
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
