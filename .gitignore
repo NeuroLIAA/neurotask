@@ -172,3 +172,7 @@ cython_debug/
 
 .idea/
 .vscode/
+
+# Visualization outputs
+crosses_visualizations/
+test_visualizations/
