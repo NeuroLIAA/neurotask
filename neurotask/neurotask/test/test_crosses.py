@@ -72,31 +72,39 @@ def test_no_cross_returns_zero():
 
     assert metrics["number_of_crosses"] == 0
 
-
 def test_multiple_crosses_detects_all():
     """
-    Trail con múltiples cruces debe detectar todos los cruces.
-    Forma un patrón que cruza múltiples veces.
+    Trail con múltiples cruces: debe detectar exactamente 4 cruces (incluye touch en endpoint).
+
+    Segmentos (6 puntos -> 5 segmentos):
+      s0: (0,0)   -> (10,10)   [0,100]
+      s1: (10,10) -> (0,10)    [100,600]
+      s2: (0,10)  -> (10,0)    [600,700]
+      s3: (10,0)  -> (5,0)     [700,1200]
+      s4: (5,0)   -> (5,10)    [1200,1300]
+
+    Pares no adyacentes que intersectan y pasan el filtro temporal (threshold=500ms):
+      - s0 con s2: cruce interior en (5,5), gap = 600 - 100 = 500  -> cuenta
+      - s0 con s4: intersección en (5,5),       gap = 1200 - 100 = 1100 -> cuenta
+      - s2 con s4: intersección en (5,5),       gap = 1200 - 700 = 500 -> cuenta
+      - s1 con s4: touch en endpoint (5,10),    gap = 1200 - 600 = 600 -> cuenta
+
+    Total esperado: 4 cruces.
     """
-    # Crea un patrón que se cruza múltiples veces
-    # Segmento 1: (0,0) -> (10,10) tiempo [0, 100]
-    # Segmento 2: (0,10) -> (10,0) tiempo [600, 700] - cruza con segmento 1
-    # Segmento 3: (5,0) -> (5,10) tiempo [1200, 1300] - cruza con segmento 1 y 2
     cursor_trail = build_cursor_trail([
-        (0.0, 0.0, 0.0),      # Inicio segmento 1
-        (10.0, 10.0, 100.0),  # Fin segmento 1
-        (5.0, 5.0, 200.0),    # Punto intermedio
-        (0.0, 10.0, 600.0),   # Inicio segmento 2
-        (10.0, 0.0, 700.0),   # Fin segmento 2 (cruza con segmento 1)
-        (5.0, 0.0, 1200.0),   # Inicio segmento 3
-        (5.0, 10.0, 1300.0), # Fin segmento 3 (cruza con segmento 1 y 2)
+        (0.0, 0.0, 0.0),
+        (10.0, 10.0, 100.0),
+        (0.0, 10.0, 600.0),
+        (10.0, 0.0, 700.0),
+        (5.0, 0.0, 1200.0),
+        (5.0, 10.0, 1300.0),
     ])
     trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
-    # Debe detectar al menos 2 cruces (segmento 3 cruza con segmento 1 y 2)
-    assert metrics["number_of_crosses"] >= 2
+    assert metrics["number_of_crosses"] == 4
+    assert isinstance(metrics["number_of_crosses"], (int, np.integer))
 
 
 def test_segments_too_close_in_time_are_excluded():
@@ -281,27 +289,26 @@ def test_adjacent_segments_do_not_count_as_cross():
 
 def test_segments_that_touch_at_endpoint():
     """
-    Segmentos que se tocan solo en un endpoint no deben contar como cruce.
+    Segmentos que se tocan solo en un endpoint sí cuentan como cruce.
+    El algoritmo de intersección considera que compartir un endpoint es una intersección.
     """
+    # Crear un trail donde dos segmentos comparten un endpoint
     # Segmento 1: (0,0) -> (5,5) tiempo [0, 100]
-    # Segmento 2: (5,5) -> (10,10) tiempo [600, 700] - comparten endpoint pero no se cruzan
-    # Nota: Estos son segmentos adyacentes, así que no se comparan
-    # Para que se comparen, necesitamos un punto intermedio
+    # Segmento 2: (5,5) -> (10,10) tiempo [600, 700] - comparten endpoint (5,5)
+    # Agregar punto intermedio para que no sean adyacentes y se comparen
     cursor_trail = build_cursor_trail([
-        (0.0, 0.0, 0.0),
-        (5.0, 5.0, 100.0),
-        (10.0, 0.0, 200.0),  # Punto intermedio
-        (5.0, 5.0, 600.0),    # Vuelve al punto medio
-        (10.0, 10.0, 700.0),  # Continúa desde el punto medio
+        (0.0, 0.0, 0.0),      # Inicio segmento 1
+        (5.0, 5.0, 100.0),   # Fin segmento 1, inicio segmento 2 (punto compartido)
+        (10.0, 0.0, 200.0),  # Punto intermedio (para que no sean adyacentes)
+        (5.0, 5.0, 600.0),   # Vuelve al punto compartido
+        (10.0, 10.0, 700.0), # Fin segmento 2 (continúa desde el punto compartido)
     ])
     trial, subject = build_trial_and_subject(cursor_trail)
 
     metrics = _compute_metrics(trial, subject)
 
-    # Los segmentos que solo se tocan en un endpoint no se cruzan realmente
-    # El algoritmo de intersección debe retornar False para este caso
-    # Si hay un cruce, sería porque los segmentos realmente se cruzan, no solo se tocan
-    assert metrics["number_of_crosses"] >= 0  # Puede ser 0 o más dependiendo de la geometría
+    # El algoritmo de intersección cuenta como cruce cuando los segmentos comparten un endpoint
+    assert metrics["number_of_crosses"] == 1
 
 
 def test_colinear_segments_do_not_cross():
