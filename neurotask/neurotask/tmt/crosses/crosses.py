@@ -2,25 +2,31 @@ from typing import List, Tuple
 
 from ..model.tmt_model import TMTTrial, Coordinate
 
-
-def calculate_crosses_for_trial(trial: TMTTrial, time_threshold: float = 500) -> Tuple[
-    int, List[Tuple[Tuple[Coordinate, Coordinate], Tuple[Coordinate, Coordinate], float]]]:
+def calculate_crosses_for_trial(
+    trial: TMTTrial,
+    time_threshold: float = 500,
+) -> Tuple[int, List[Tuple[Tuple[Coordinate, Coordinate], Tuple[Coordinate, Coordinate], float]]]:
     """
     Calculates the number of times the cursor trail crosses itself, excluding segments that are very near in time.
 
     Parameters:
     - trial: TMTTrial object containing the cursor_trail.
-    - time_threshold: float, the minimum time difference between segments to consider them for intersection (in seconds).
+    - time_threshold: float, the minimum time gap (in milliseconds) between segments to consider them for intersection.
+      Segments with gap < threshold are excluded as "too close in time". Default: 500 ms.
 
     Returns:
     - num_crosses: int, the number of times the cursor trail crosses itself.
-    - cross_segments: list of tuples, each containing two crossing segments.
+    - cross_segments: list of tuples: (seg1, seg2, time_gap) for each detected crossing.
+      time_gap is in milliseconds.
     """
-    # Extract positions from the cursor trail
     cursor_trail = trial.get_cursor_trail_from_start()
 
-    # Create list of line segments with time information
-    segments = []
+    # Not enough points to form non-adjacent segments
+    if len(cursor_trail) < 4:
+        return 0, []
+
+    # Build segments with endpoint times
+    segments: List[Tuple[Tuple[Coordinate, float], Tuple[Coordinate, float]]] = []
     for i in range(len(cursor_trail) - 1):
         p1 = cursor_trail[i].position
         p2 = cursor_trail[i + 1].position
@@ -29,46 +35,41 @@ def calculate_crosses_for_trial(trial: TMTTrial, time_threshold: float = 500) ->
         segments.append(((p1, t1), (p2, t2)))
 
     num_crosses = 0
-    cross_segments = []
+    cross_segments: List[Tuple[Tuple[Coordinate, Coordinate], Tuple[Coordinate, Coordinate], float]] = []
 
-    # Iterate over all pairs of non-adjacent segments
     for i in range(len(segments)):
         for j in range(i + 1, len(segments)):
             # Skip adjacent segments (they share a point)
             if j == i + 1:
                 continue
 
-            # Calculate the minimum time difference between segments
+            # Time interval for each segment
             t_start_i = min(segments[i][0][1], segments[i][1][1])
-            t_end_i = max(segments[i][0][1], segments[i][1][1])
+            t_end_i   = max(segments[i][0][1], segments[i][1][1])
             t_start_j = min(segments[j][0][1], segments[j][1][1])
-            t_end_j = max(segments[j][0][1], segments[j][1][1])
+            t_end_j   = max(segments[j][0][1], segments[j][1][1])
 
-            # Skip segments that are too close in time
-            skip_subject = False
-            for t1 in [t_start_i, t_end_i, t_start_j, t_end_j]:
-                for t2 in [t_start_i, t_end_i, t_start_j, t_end_j]:
-                    if t1 == t2:
-                        continue
-                    time_diff = t1 - t2
-                    if abs(time_diff) < time_threshold:
-                        skip_subject = True
-                    else:
-                        # If at least one pair of points is far enough in time, do not skip
-                        skip_subject = False
-                        break
+            # Compute gap between time intervals (0 if overlapping)
+            if t_end_i < t_start_j:
+                time_gap = t_start_j - t_end_i
+            elif t_end_j < t_start_i:
+                time_gap = t_start_i - t_end_j
+            else:
+                time_gap = 0.0
 
-            if skip_subject:
-                continue  # Segments are too close in time, skip intersection test
+            # Skip if segments are too close in time
+            if time_gap < time_threshold:
+                continue
 
             seg1 = (segments[i][0][0], segments[i][1][0])
             seg2 = (segments[j][0][0], segments[j][1][0])
 
             if segments_intersect(seg1[0], seg1[1], seg2[0], seg2[1]):
                 num_crosses += 1
-                cross_segments.append((seg1, seg2, time_diff))
+                cross_segments.append((seg1, seg2, time_gap))
 
     return num_crosses, cross_segments
+
 
 
 def orientation(p: Coordinate, q: Coordinate, r: Coordinate) -> int:

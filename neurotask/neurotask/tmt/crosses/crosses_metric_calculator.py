@@ -8,5 +8,12 @@ class CrossesMetricCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points) -> dict:
-        metrics[self.get_metric_name("number_of_crosses")] = calculate_crosses_for_trial(trial) if calculate_crosses else np.nan
+        metric_key = self.get_metric_name("number_of_crosses")
+
+        if calculate_crosses:
+            num_crosses, _ = calculate_crosses_for_trial(trial)
+            metrics[metric_key] = num_crosses
+        else:
+            metrics[metric_key] = np.nan
+
         return metrics

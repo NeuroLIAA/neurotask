@@ -18,8 +18,14 @@ class DifferenceFromIdealDistance(BaseMetricCalculator):
             difference = self.calculate_distance_difference_from_ideal(cursor_trail)
             differences.append(difference)
 
-
-        metrics[self.get_metric_name('distance_difference_from_ideal')] = float(np.mean(differences))
+        if differences:
+            metrics[self.get_metric_name('distance_difference_from_ideal')] = float(np.mean(differences))
+        else:
+            raise ValueError(
+                f"Cannot calculate distance_difference_from_ideal: No valid target segments found. "
+                f"Trial {trial.id} has {len(trails_between_targets)} trails_between_targets, "
+                f"but none had valid targets (all targets were None or segments were invalid)."
+            )
 
         return metrics
 
