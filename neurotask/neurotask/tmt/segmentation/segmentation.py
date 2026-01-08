@@ -98,6 +98,11 @@ def classify_cursor_positions_with_hesitation(
     speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
     over_target_flags = calculate_over_targets(tmt_trial, target_radius)
 
+    # Invariant: one over_target flag per cursor point
+    assert len(over_target_flags) == len(cursor_trail), (
+        "calculate_over_targets must return one entry per cursor point"
+    )
+
     current_state = 'Search'
     last_target_position = over_target_flags[0][1]
 
