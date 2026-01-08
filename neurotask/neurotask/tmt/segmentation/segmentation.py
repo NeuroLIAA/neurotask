@@ -96,7 +96,7 @@ def classify_cursor_positions_with_hesitation(
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
     speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
-    over_target_flags = calculate_over_targets(cursor_trail, target_radius, tmt_trial.stimuli)
+    over_target_flags = calculate_over_targets(tmt_trial, target_radius)
 
     current_state = 'Search'
     last_target_position = over_target_flags[0][1]
@@ -131,7 +131,7 @@ def classify_cursor_positions_with_hesitation(
     return classified_positions
 
 
-def calculate_over_targets_from_correct_touches(
+def calculate_over_targets(
     trial: TMTTrial,
     target_radius: float,
 ) -> List[Tuple[bool, Coordinate]]:
@@ -184,48 +184,6 @@ def calculate_over_targets_from_correct_touches(
                 over_target = False
 
         over_target_flags.append((over_target, expected_pos))
-
-    return over_target_flags
-
-def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> List[Tuple[bool, Coordinate]]:
-    over_target_flags = []
-    current_target_index = 0
-    on_current_target = False  # Flag to track if cursor is on the current target
-
-    for cursor_info in cursor_trail:
-        cursor_pos = cursor_info.position
-
-        if current_target_index == len(stimuli_sequence):
-            # TODO: Review this - at this point all targets have been touched
-            previous_target =  stimuli_sequence[current_target_index-1]
-            previous_target_pos = previous_target.position
-            over_target_flags.append((True, previous_target_pos))
-            continue
-        elif current_target_index > len(stimuli_sequence):
-            raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
-
-        current_target = stimuli_sequence[current_target_index]
-        target_pos = current_target.position
-        distance_to_target = calculate_distance(cursor_pos, target_pos)
-
-        if on_current_target:
-            # Cursor was previously over the target, check if it still is
-            if distance_to_target < target_radius:
-                over_target = True
-            else:
-                # Cursor has moved off the target
-                over_target = False
-                on_current_target = False
-                current_target_index += 1  # Move to the next target
-        else:
-            # Cursor was not over the target, check if it is now
-            if distance_to_target < target_radius:
-                over_target = True
-                on_current_target = True
-            else:
-                over_target = False
-
-        over_target_flags.append((over_target, target_pos))
 
     return over_target_flags
 
