@@ -263,10 +263,7 @@ def calculate_distance_in_states(classified_positions):
         current_state = classified_positions[i][0]
 
         # Calculate distance between positions
-        distance = math.hypot(
-            current_position.x - previous_position.x,
-            current_position.y - previous_position.y
-        )
+        distance = calculate_distance(current_position, previous_position)
 
         # Accumulate distance for the previous state
         state_distances[previous_state] += distance
