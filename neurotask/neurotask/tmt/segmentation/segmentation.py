@@ -38,11 +38,11 @@ def speed_increases_over_consecutive_points(
     # Adjust for the fact that speeds list has one less element than cursor_trail
     speed_index = cursor_index - 1  # Speeds are between cursor positions
 
-    if speed_index < consecutive_points:
+    if speed_index < consecutive_points -1:
         return False  # Not enough previous speeds to evaluate
 
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
-        if i <= 0:
+        if i < 0:
             return False  # Not enough data
         speed_result = speeds[i]
         if not speed_result.is_valid:
@@ -73,11 +73,11 @@ def speed_decreases_over_consecutive_points(
     # Adjust for the fact that speeds list has one less element than cursor_trail
     speed_index = cursor_index - 1  # Speeds are between cursor positions
 
-    if speed_index < consecutive_points:
+    if speed_index < consecutive_points - 1:
         return False  # Not enough previous speeds to evaluate
 
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
-        if i <= 0:
+        if i < 0:
             return False  # Not enough data
         speed_result = speeds[i]
         if not speed_result.is_valid:
