@@ -13,6 +13,7 @@ from neurotask.tmt.metrics.speed_metrics import (
     SpeedResult
 )
 from ..metrics.distance_calculation import calculate_distance
+from ..metrics.targets_touched import touched_targets_for_every_cursor_point
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
 
@@ -37,11 +38,11 @@ def speed_increases_over_consecutive_points(
     # Adjust for the fact that speeds list has one less element than cursor_trail
     speed_index = cursor_index - 1  # Speeds are between cursor positions
 
-    if speed_index < consecutive_points:
+    if speed_index < consecutive_points -1:
         return False  # Not enough previous speeds to evaluate
 
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
-        if i <= 0:
+        if i < 0:
             return False  # Not enough data
         speed_result = speeds[i]
         if not speed_result.is_valid:
@@ -72,11 +73,11 @@ def speed_decreases_over_consecutive_points(
     # Adjust for the fact that speeds list has one less element than cursor_trail
     speed_index = cursor_index - 1  # Speeds are between cursor positions
 
-    if speed_index < consecutive_points:
+    if speed_index < consecutive_points - 1:
         return False  # Not enough previous speeds to evaluate
 
     for i in range(speed_index - consecutive_points + 1, speed_index + 1):
-        if i <= 0:
+        if i < 0:
             return False  # Not enough data
         speed_result = speeds[i]
         if not speed_result.is_valid:
@@ -95,7 +96,12 @@ def classify_cursor_positions_with_hesitation(
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
     speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
-    over_target_flags = calculate_over_targets(cursor_trail, target_radius, tmt_trial.stimuli)
+    over_target_flags = calculate_over_targets(tmt_trial, target_radius)
+
+    # Invariant: one over_target flag per cursor point
+    assert len(over_target_flags) == len(cursor_trail), (
+        "calculate_over_targets must return one entry per cursor point"
+    )
 
     current_state = 'Search'
     last_target_position = over_target_flags[0][1]
@@ -130,45 +136,59 @@ def classify_cursor_positions_with_hesitation(
     return classified_positions
 
 
-def calculate_over_targets(cursor_trail, target_radius, stimuli_sequence) -> List[Tuple[bool, Coordinate]]:
-    over_target_flags = []
-    current_target_index = 0
-    on_current_target = False  # Flag to track if cursor is on the current target
+def calculate_over_targets(
+    trial: TMTTrial,
+    target_radius: float,
+) -> List[Tuple[bool, Coordinate]]:
+    """
+    Returns, for each cursor point:
+      - whether the cursor is over the expected target
+      - the position of the expected (current) target
 
-    for cursor_info in cursor_trail:
-        cursor_pos = cursor_info.position
+    Semantics:
+    - Only the expected target in the sequence is considered.
+    - If the cursor stays within the same target radius, it remains 'over_target'.
+    - The expected target advances ONLY when the cursor leaves the current target.
+    - After the last target is reached, it remains as reference for all remaining points.
+    """
+    touched_info = touched_targets_for_every_cursor_point(trial, target_radius)
 
-        if current_target_index == len(stimuli_sequence):
-            # TODO: Review this - at this point all targets have been touched
-            previous_target =  stimuli_sequence[current_target_index-1]
-            previous_target_pos = previous_target.position
-            over_target_flags.append((True, previous_target_pos))
+    over_target_flags: List[Tuple[bool, Coordinate]] = []
+
+    expected_idx = 0
+    on_current_target = False
+
+    for (touched_targets, _) in touched_info:
+
+        # If all targets were already reached, keep last target as reference
+        if expected_idx >= len(trial.stimuli):
+            last_target = trial.stimuli[-1]
+            over_target_flags.append((True, last_target.position))
             continue
-        elif current_target_index > len(stimuli_sequence):
-            raise ValueError("Current target index exceeds the number of stimuli in the sequence.")
 
-        current_target = stimuli_sequence[current_target_index]
-        target_pos = current_target.position
-        distance_to_target = calculate_distance(cursor_pos, target_pos)
+        expected_target = trial.stimuli[expected_idx]
+        expected_pos = expected_target.position
+
+        is_touching_expected = expected_target in touched_targets
 
         if on_current_target:
-            # Cursor was previously over the target, check if it still is
-            if distance_to_target < target_radius:
+            if is_touching_expected:
+                # Still on the same target
                 over_target = True
             else:
-                # Cursor has moved off the target
-                over_target = False
+                # Cursor left the target → advance sequence
                 on_current_target = False
-                current_target_index += 1  # Move to the next target
+                expected_idx += 1
+                over_target = False
         else:
-            # Cursor was not over the target, check if it is now
-            if distance_to_target < target_radius:
-                over_target = True
+            if is_touching_expected:
+                # Cursor just entered the expected target
                 on_current_target = True
+                over_target = True
             else:
                 over_target = False
 
-        over_target_flags.append((over_target, target_pos))
+        over_target_flags.append((over_target, expected_pos))
 
     return over_target_flags
 
@@ -243,10 +263,7 @@ def calculate_distance_in_states(classified_positions):
         current_state = classified_positions[i][0]
 
         # Calculate distance between positions
-        distance = math.hypot(
-            current_position.x - previous_position.x,
-            current_position.y - previous_position.y
-        )
+        distance = calculate_distance(current_position, previous_position)
 
         # Accumulate distance for the previous state
         state_distances[previous_state] += distance
