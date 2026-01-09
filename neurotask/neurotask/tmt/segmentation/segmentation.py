@@ -213,6 +213,28 @@ def calculate_time_in_states(classified_positions):
     return state_times
 
 
+def calculate_distance_in_states(classified_positions):
+    state_distances = {'Search': 0.0, 'Travel': 0.0, 'Hesitation': 0.0}
+    previous_position = classified_positions[0][1].position
+    previous_state = classified_positions[0][0]
+
+    for i in range(1, len(classified_positions)):
+        current_position = classified_positions[i][1].position
+        current_state = classified_positions[i][0]
+
+        # Calculate distance between positions
+        distance = calculate_distance(current_position, previous_position)
+
+        # Accumulate distance for the previous state
+        state_distances[previous_state] += distance
+
+        # Update for next iteration
+        previous_position = current_position
+        previous_state = current_state
+
+    return state_distances
+
+
 def calculate_hesitation_periods(classified_positions):
     hesitation_periods = []
     in_hesitation = False
@@ -251,28 +273,6 @@ def calculate_hesitation_periods(classified_positions):
         'max_duration': max_duration,
         'hesitation_periods': hesitation_periods
     }
-
-
-def calculate_distance_in_states(classified_positions):
-    state_distances = {'Search': 0.0, 'Travel': 0.0, 'Hesitation': 0.0}
-    previous_position = classified_positions[0][1].position
-    previous_state = classified_positions[0][0]
-
-    for i in range(1, len(classified_positions)):
-        current_position = classified_positions[i][1].position
-        current_state = classified_positions[i][0]
-
-        # Calculate distance between positions
-        distance = calculate_distance(current_position, previous_position)
-
-        # Accumulate distance for the previous state
-        state_distances[previous_state] += distance
-
-        # Update for next iteration
-        previous_position = current_position
-        previous_state = current_state
-
-    return state_distances
 
 
 def calculate_average_speed_in_states(classified_positions):
