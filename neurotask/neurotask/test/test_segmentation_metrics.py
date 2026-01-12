@@ -34,51 +34,36 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject, speed_threshold: floa
     )
 
 
-def test_segmentation_metrics_smoke_and_consistency_with_explicit_targets():
-    """
-    Test "correcto" (robusto) para SegmentationMetricCalculator:
-
-    - No intenta adivinar la clasificación exacta (Search/Travel/Hesitation), porque eso depende de reglas.
-    - En cambio:
-        1) Fija targets explícitos para que `calculate_over_targets` sea determinístico.
-        2) Verifica que estén las 15 métricas.
-        3) Verifica invariantes consistentes con las definiciones:
-           - tiempos/distancias no negativos
-           - suma de tiempos = duración total del trail
-           - hesitation_ratio consistente con sus componentes
-           - coherencia interna de hesitation_periods / total_hesitations / max / avg
-           - tipos esperados (int/list)
-    """
-
-    # Trail simple, tiempos monotónicos (en segundos acá, pero el código solo usa diferencias)
+def _build_simple_trial_and_subject():
+    """Helper to create a simple trial and subject for basic tests."""
     cursor_trail = build_cursor_trail([
-        (0.0, 0.0, 0.0),   # cerca del target 0
-        (0.5, 0.0, 1.0),   # todavía dentro de radio (target 0)
-        (5.0, 0.0, 2.0),   # lejos -> debería salir del target 0
-        (10.0, 0.0, 3.0),  # cerca del target 1
-        (10.5, 0.0, 4.0),  # todavía dentro del target 1
-        (15.0, 0.0, 5.0),  # sale del target 1
+        (0.0, 0.0, 0.0),
+        (0.5, 0.0, 1.0),
+        (5.0, 0.0, 2.0),
+        (10.0, 0.0, 3.0),
+        (10.5, 0.0, 4.0),
+        (15.0, 0.0, 5.0),
     ])
-
     targets = [
         TMTTarget("1", Coordinate(0.0, 0.0)),
         TMTTarget("2", Coordinate(10.0, 0.0)),
     ]
-
-    trial, subject = build_trial_and_subject(
+    return build_trial_and_subject(
         cursor_trail=cursor_trail,
         targets=targets,
         target_radius=1.0,
     )
 
-    metrics = _compute_metrics(
-        trial=trial,
-        subject=subject,
-        speed_threshold=3.0,
-        consecutive_points=2,
-    )
 
-    # --- 1) Keys esperadas ---
+# =============================================================================
+# Tests de estructura básica
+# =============================================================================
+
+def test_returns_all_expected_metrics():
+    """Verifica que las 15 métricas esperadas estén presentes."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
     expected_keys = [
         "hesitation_time",
         "travel_time",
@@ -96,51 +81,145 @@ def test_segmentation_metrics_smoke_and_consistency_with_explicit_targets():
         "max_duration",
         "hesitation_periods",
     ]
+    
     for key in expected_keys:
         assert key in metrics, f"Missing metric: {key}"
 
-    # --- 2) Tipos básicos ---
+
+def test_metrics_types_are_correct():
+    """Verifica que los tipos de datos sean correctos."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
     assert isinstance(metrics["state_transitions"], int)
     assert isinstance(metrics["total_hesitations"], int)
     assert isinstance(metrics["hesitation_periods"], list)
-
-    # --- 3) No-negatividad (invariantes) ---
+    
     for k in ["hesitation_time", "travel_time", "search_time"]:
-        assert metrics[k] >= 0.0
+        assert isinstance(metrics[k], float), f"{k} should be float"
     for k in ["hesitation_distance", "travel_distance", "search_distance"]:
-        assert metrics[k] >= 0.0
+        assert isinstance(metrics[k], float), f"{k} should be float"
     for k in ["hesitation_avg_speed", "travel_avg_speed", "search_avg_speed"]:
-        assert metrics[k] >= 0.0
+        assert isinstance(metrics[k], float), f"{k} should be float"
 
-    # --- 4) Suma de tiempos = duración total del trail ---
-    # La implementación acumula dt entre puntos por estado "previo", por lo que la suma
-    # de Search/Travel/Hesitation debe ser exactamente (t_last - t_first).
-    t0 = cursor_trail[0].time
-    tN = cursor_trail[-1].time
-    total_duration = tN - t0
 
-    total_state_time = (
-        metrics["search_time"] +
-        metrics["travel_time"] +
-        metrics["hesitation_time"]
-    )
-    assert total_state_time == pytest.approx(total_duration, abs=1e-6), (
+def test_prefix_adds_prefix_to_all_keys():
+    """Verifica que el prefijo se agregue a todas las métricas."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2, prefix="non_cut_")
+    
+    assert "non_cut_search_time" in metrics
+    assert "non_cut_travel_time" in metrics
+    assert "non_cut_hesitation_time" in metrics
+    assert "non_cut_state_transitions" in metrics
+    assert "non_cut_hesitation_ratio" in metrics
+    
+    assert "search_time" not in metrics
+    assert "travel_time" not in metrics
+
+
+# =============================================================================
+# Tests de validación de errores
+# =============================================================================
+
+def test_speed_threshold_none_raises_error():
+    """speed_threshold=None debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Speed threshold must be provided"):
+        _compute_metrics(trial, subject, speed_threshold=None, consecutive_points=2)
+
+
+def test_speed_threshold_negative_raises_error():
+    """speed_threshold <= 0 debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Speed threshold must be positive"):
+        _compute_metrics(trial, subject, speed_threshold=-1.0, consecutive_points=2)
+
+
+def test_speed_threshold_zero_raises_error():
+    """speed_threshold = 0 debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Speed threshold must be positive"):
+        _compute_metrics(trial, subject, speed_threshold=0.0, consecutive_points=2)
+
+
+def test_consecutive_points_none_raises_error():
+    """consecutive_points=None debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Consecutive points must be provided"):
+        _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=None)
+
+
+def test_consecutive_points_zero_raises_error():
+    """consecutive_points <= 0 debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Number of consecutive points must be positive"):
+        _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=0)
+
+
+def test_consecutive_points_negative_raises_error():
+    """consecutive_points < 0 debe lanzar ValueError."""
+    trial, subject = _build_simple_trial_and_subject()
+    
+    with pytest.raises(ValueError, match="Number of consecutive points must be positive"):
+        _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=-1)
+
+
+# =============================================================================
+# Tests de invariantes matemáticos
+# =============================================================================
+
+def test_time_metrics_sum_equals_total_duration():
+    """La suma de tiempos por estado debe ser igual a la duración total del trail."""
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (0.5, 0.0, 1.0),
+        (5.0, 0.0, 2.0),
+        (10.0, 0.0, 3.0),
+        (10.5, 0.0, 4.0),
+        (15.0, 0.0, 5.0),
+    ])
+    targets = [
+        TMTTarget("1", Coordinate(0.0, 0.0)),
+        TMTTarget("2", Coordinate(10.0, 0.0)),
+    ]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
+    total_duration = cursor_trail[-1].time - cursor_trail[0].time
+    total_state_time = metrics["search_time"] + metrics["travel_time"] + metrics["hesitation_time"]
+    
+    assert total_state_time == pytest.approx(total_duration, abs=1e-6), \
         f"Sum of state times ({total_state_time}) != trial duration ({total_duration})"
-    )
 
-    # --- 5) hesitation_ratio coherente con su definición ---
+
+def test_hesitation_ratio_is_consistent():
+    """hesitation_ratio debe ser hesitation_time / (travel_time + hesitation_time)."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
     denom = metrics["travel_time"] + metrics["hesitation_time"]
     if denom > 0:
-        assert metrics["hesitation_ratio"] == pytest.approx(
-            metrics["hesitation_time"] / denom, abs=1e-6
-        )
+        expected_ratio = metrics["hesitation_time"] / denom
+        assert metrics["hesitation_ratio"] == pytest.approx(expected_ratio, abs=1e-6)
     else:
         assert metrics["hesitation_ratio"] == pytest.approx(0.0, abs=1e-6)
 
-    # --- 6) Coherencia de hesitation_periods ---
+
+def test_hesitation_periods_consistency():
+    """total_hesitations debe ser igual a len(hesitation_periods), y max/avg deben ser consistentes."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
     hp = metrics["hesitation_periods"]
     assert metrics["total_hesitations"] == len(hp)
-
+    
     if len(hp) == 0:
         assert metrics["average_duration"] == pytest.approx(0.0, abs=1e-6)
         assert metrics["max_duration"] == pytest.approx(0.0, abs=1e-6)
@@ -148,13 +227,142 @@ def test_segmentation_metrics_smoke_and_consistency_with_explicit_targets():
         assert metrics["max_duration"] == pytest.approx(max(hp), abs=1e-6)
         assert metrics["average_duration"] == pytest.approx(sum(hp) / len(hp), abs=1e-6)
 
-    # --- 7) Prefijo (mini check opcional dentro del mismo test) ---
-    metrics_pref = _compute_metrics(
-        trial=trial,
-        subject=subject,
-        speed_threshold=3.0,
-        consecutive_points=2,
-        prefix="non_cut_",
-    )
-    assert "non_cut_search_time" in metrics_pref
-    assert "search_time" not in metrics_pref
+
+def test_distance_metrics_sum_is_consistent():
+    """La suma de distancias por estado debe ser igual a la distancia total recorrida."""
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (10.0, 0.0, 1.0),
+        (20.0, 0.0, 2.0),
+    ])
+    targets = [TMTTarget("1", Coordinate(0.0, 0.0))]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=2)
+    
+    total_distance = metrics["search_distance"] + metrics["travel_distance"] + metrics["hesitation_distance"]
+    
+    expected_total_distance = 20.0
+    assert total_distance == pytest.approx(expected_total_distance, abs=1e-6), \
+        f"Sum of state distances ({total_distance}) != expected total distance ({expected_total_distance})"
+
+
+def test_metrics_are_non_negative():
+    """Todas las métricas de tiempo, distancia y velocidad deben ser >= 0."""
+    trial, subject = _build_simple_trial_and_subject()
+    metrics = _compute_metrics(trial, subject, speed_threshold=3.0, consecutive_points=2)
+    
+    for k in ["hesitation_time", "travel_time", "search_time"]:
+        assert metrics[k] >= 0.0, f"{k} should be non-negative"
+    for k in ["hesitation_distance", "travel_distance", "search_distance"]:
+        assert metrics[k] >= 0.0, f"{k} should be non-negative"
+    for k in ["hesitation_avg_speed", "travel_avg_speed", "search_avg_speed"]:
+        assert metrics[k] >= 0.0, f"{k} should be non-negative"
+    
+    assert metrics["state_transitions"] >= 0
+    assert metrics["total_hesitations"] >= 0
+    assert 0.0 <= metrics["hesitation_ratio"] <= 1.0
+
+
+# =============================================================================
+# Tests de estados específicos
+# =============================================================================
+
+def test_all_points_on_target_only_search():
+    """Cuando todos los puntos están sobre el target, solo debe haber tiempo en Search."""
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (0.1, 0.0, 1.0),
+        (0.2, 0.0, 2.0),
+        (0.3, 0.0, 3.0),
+    ])
+    targets = [TMTTarget("1", Coordinate(0.0, 0.0))]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=2)
+    
+    assert metrics["search_time"] > 0.0
+    assert metrics["travel_time"] == pytest.approx(0.0, abs=1e-6)
+    assert metrics["hesitation_time"] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_all_points_on_target_exact_values():
+    """
+    Trail donde todos los puntos están sobre el target.
+    Estados: Search(0) -> Search(1) -> Search(2) -> Search(3)
+    
+    Valores esperados calculados manualmente:
+    - search_time: 3.0 (de t=0 a t=3, acumulado para estado anterior)
+    - search_distance: 0.3 (0.1 + 0.1 + 0.1)
+    - search_avg_speed: ~0.1 (promedio de velocidades: 0.1, 0.1, 0.1)
+    - travel_time, hesitation_time: 0.0
+    - state_transitions: 0
+    """
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (0.1, 0.0, 1.0),
+        (0.2, 0.0, 2.0),
+        (0.3, 0.0, 3.0),
+    ])
+    targets = [TMTTarget("1", Coordinate(0.0, 0.0))]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=2)
+    
+    assert metrics["search_time"] == pytest.approx(3.0, abs=1e-6)
+    assert metrics["travel_time"] == pytest.approx(0.0, abs=1e-6)
+    assert metrics["hesitation_time"] == pytest.approx(0.0, abs=1e-6)
+    
+    assert metrics["search_distance"] == pytest.approx(0.3, abs=1e-6)
+    assert metrics["travel_distance"] == pytest.approx(0.0, abs=1e-6)
+    assert metrics["hesitation_distance"] == pytest.approx(0.0, abs=1e-6)
+    
+    assert metrics["search_avg_speed"] == pytest.approx(0.1, abs=1e-6)
+    assert metrics["travel_avg_speed"] == pytest.approx(0.0, abs=1e-6)
+    assert metrics["hesitation_avg_speed"] == pytest.approx(0.0, abs=1e-6)
+    
+    assert metrics["state_transitions"] == 0
+    assert metrics["total_hesitations"] == 0
+    assert metrics["hesitation_ratio"] == pytest.approx(0.0, abs=1e-6)
+
+
+def test_no_hesitation_returns_zero_hesitation_metrics():
+    """Sin hesitación, las métricas de hesitación deben ser 0."""
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (5.0, 0.0, 1.0),
+        (10.0, 0.0, 2.0),
+        (15.0, 0.0, 3.0),
+    ])
+    targets = [TMTTarget("1", Coordinate(0.0, 0.0))]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=2)
+    
+    assert metrics["total_hesitations"] == 0
+    assert metrics["hesitation_periods"] == []
+    assert metrics["average_duration"] == pytest.approx(0.0, abs=1e-6)
+    assert metrics["max_duration"] == pytest.approx(0.0, abs=1e-6)
+
+
+# =============================================================================
+# Tests de boundary cases
+# =============================================================================
+
+def test_cursor_trail_with_minimum_points():
+    """Trail con 2 puntos (mínimo para calcular velocidad)."""
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (5.0, 0.0, 1.0),
+    ])
+    targets = [TMTTarget("1", Coordinate(0.0, 0.0))]
+    trial, subject = build_trial_and_subject(cursor_trail=cursor_trail, targets=targets, target_radius=1.0)
+    
+    metrics = _compute_metrics(trial, subject, speed_threshold=1.0, consecutive_points=2)
+    
+    total_duration = cursor_trail[-1].time - cursor_trail[0].time
+    total_state_time = metrics["search_time"] + metrics["travel_time"] + metrics["hesitation_time"]
+    
+    assert total_state_time == pytest.approx(total_duration, abs=1e-6)
+    assert metrics["total_hesitations"] >= 0
+    assert isinstance(metrics["hesitation_periods"], list)
