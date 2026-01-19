@@ -8,6 +8,7 @@ from neurotask.tmt.crosses.crosses_metric_calculator import CrossesMetricCalcula
 from neurotask.tmt.metrics.area_calculation import DifferenceFromIdealArea
 from neurotask.tmt.metrics.difference_from_ideal_distance import DifferenceFromIdealDistance
 from neurotask.tmt.metrics.intra_and_inter_target_time import TargetTime
+from neurotask.tmt.metrics.sampling_period import SamplingPeriodCalculator
 from neurotask.tmt.metrics.speed_metrics import SpeedMetricsCalculator, InvalidSpeedError, NonMonotonicTimeError
 from neurotask.tmt.metrics.zig_zag_amplitud import ZigZagAmplitude
 from .base_metric import ReactionTimeCalculator, BaseMetricCalculator
@@ -184,6 +185,7 @@ def get_cut_trial_metric_calculators():
         TotalDistanceCalculator(),
         ReactionTimeCalculator(),
         SpeedMetricsCalculator(),
+        SamplingPeriodCalculator(),
         SegmentationMetricCalculator(),
         TargetsTouchesCalculator(),
         CrossesMetricCalculator(),
@@ -200,6 +202,7 @@ def get_non_cut_trial_metric_calculators():
         TotalDistanceCalculator(prefix),
         ReactionTimeCalculator(prefix),
         SpeedMetricsCalculator(prefix),
+        SamplingPeriodCalculator(prefix),
         SegmentationMetricCalculator(prefix),
         TargetsTouchesCalculator(prefix),
         CrossesMetricCalculator(prefix),
@@ -287,6 +290,13 @@ def create_invalid_trial_row(
         "peak_acceleration": np.nan,
         "hesitation_distance": np.nan,
         "hesitation_time": np.nan,
+        "mean_sampling_period": np.nan,
+        "median_sampling_period": np.nan,
+        "std_sampling_period": np.nan,
+        "min_sampling_period": np.nan,
+        "max_sampling_period": np.nan,
+        "sample_count": np.nan,
+        "valid_interval_count": np.nan,
         "invalid_cause": invalid_cause.name
     }
 
