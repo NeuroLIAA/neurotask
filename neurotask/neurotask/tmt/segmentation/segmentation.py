@@ -382,12 +382,16 @@ def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, 
 
 
 # The following functions are used to calculate the speed threshold for all subjects in the experiment.
-def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dict[str, float]:
+def calculate_speed_threshold_for_all_subjects(
+        experiment: TMTExperiment,
+        target_radius_multiplier: float
+) -> Dict[str, float]:
     """
     Calculates the speed threshold for all subjects in the experiment.
 
     Parameters:
     - experiment: TMTExperiment object.
+    - target_radius_multiplier: float, multiplier to apply to target radius.
 
     Returns:
     - speed_thresholds: dict, where keys are subject IDs and values are the speed thresholds.
@@ -396,7 +400,7 @@ def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dic
 
     for subject_id, subject in experiment.subjects.items():
         try:
-            speed_threshold = calculate_speed_threshold(subject)
+            speed_threshold = calculate_speed_threshold(subject, target_radius_multiplier)
             speed_thresholds[subject_id] = speed_threshold
         except (ValueError, InvalidSpeedError, NonMonotonicTimeError) as e:
             # Skip subject if an error occurs
@@ -481,27 +485,28 @@ def extract_second_segment(trial: TMTTrial, target_radius: float) -> List[Cursor
     return second_segment
 
 
-def calculate_speed_threshold(subject: TMTSubject) -> float:
+def calculate_speed_threshold(subject: TMTSubject, target_radius_multiplier: float) -> float:
     """
     Calculates the median speed threshold for a subject.
     For each trial, the speed threshold is calculated as the median speed during the second segment.
     The second segment is the movement between the first and second target.
 
     Parameters:
-    - trial: TMTTrial object containing the cursor_trail and stimuli.
-    - target_radius: float, the radius of the targets.
+    - subject: TMTSubject object containing the trials.
+    - target_radius_multiplier: float, multiplier to apply to target radius.
 
     Returns:
     - speed: float, the average speed during the second segment.
     """
     trials = subject.testing_trials
+    effective_radius = subject.target_radius * target_radius_multiplier
     speeds = []
     # iterate over all trials the first that does not fail is the one we use
     for trial in trials:
         if trial.trial_type == TrialType.PART_B:
             continue
         try:
-            second_segment = extract_second_segment(trial, subject.target_radius)
+            second_segment = extract_second_segment(trial, effective_radius)
             segment_speed = calculate_segment_speed(second_segment)
             speeds.append(segment_speed)
         except ValueError:

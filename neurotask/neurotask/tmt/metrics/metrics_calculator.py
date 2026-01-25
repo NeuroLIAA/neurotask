@@ -374,7 +374,9 @@ def calculate_and_save_metrics(
     rows: List[Dict[str, Any]] = []
 
     # Compute speed thresholds for each subject.
-    speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(experiment)
+    speed_threshold_by_subject = calculate_speed_threshold_for_all_subjects(
+        experiment, target_radius_multiplier
+    )
 
     for subject_id, subject in experiment.subjects.items():
         try:
