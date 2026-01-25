@@ -8,9 +8,10 @@ from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points) -> dict:
+                    speed_threshold, consecutive_points, target_radius_multiplier: float) -> dict:
+        effective_radius = subject.target_radius * target_radius_multiplier
         correct_touches = count_correctly_touched_targets(
-            trial, subject.target_radius
+            trial, effective_radius
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches

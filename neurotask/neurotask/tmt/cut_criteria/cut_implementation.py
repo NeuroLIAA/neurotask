@@ -11,7 +11,8 @@ def cut_trial(
         correct_targets_minimum: Optional[int],
         subject: TMTSubject,
         subject_id: str,
-        cut_criteria: CutCriteria
+        cut_criteria: CutCriteria,
+        target_radius_multiplier: float = 1.0
 ) -> TMTTrial:
     """
     Process the given trial based on the specified cut criteria.
@@ -22,6 +23,7 @@ def cut_trial(
         subject (TMTSubject): The subject associated with the trial.
         subject_id (str): Unique identifier for the subject.
         cut_criteria (CutCriteria): The criteria used to cut the trial.
+        target_radius_multiplier (float): Multiplier to apply to the target radius.
 
     Returns:
         TMTTrial: The processed (cut) trial.
@@ -32,7 +34,7 @@ def cut_trial(
     if cut_criteria == CutCriteria.MINIMUM_TARGETS:
         if correct_targets_minimum is None:
             raise ValueError("Minimum targets criteria requires a minimum number of correct targets.")
-        return cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial)
+        return cut_trial_at_minimum_targets(correct_targets_minimum, subject, subject_id, trial, target_radius_multiplier)
 
     raise ValueError(f"Invalid cut criteria: {cut_criteria}")
 
@@ -41,7 +43,8 @@ def cut_trial_at_minimum_targets(
         correct_targets_minimum: int,
         subject: TMTSubject,
         subject_id: str,
-        trial: TMTTrial
+        trial: TMTTrial,
+        target_radius_multiplier: float = 1.0
 ) -> TMTTrial:
     """
     Cuts the trial at the point where the minimum number of correct target touches is reached.
@@ -51,6 +54,7 @@ def cut_trial_at_minimum_targets(
         subject (TMTSubject): The subject associated with the trial.
         subject_id (str): Unique identifier for the subject.
         trial (TMTTrial): The trial to be processed.
+        target_radius_multiplier (float): Multiplier to apply to the target radius.
 
     Returns:
         TMTTrial: The trial cut at the minimum correct target touch.
@@ -58,21 +62,22 @@ def cut_trial_at_minimum_targets(
     Raises:
         ValueError: If the trial does not meet the required number of correct target touches.
     """
-
-    correct_targets_touches = count_correctly_touched_targets(trial, subject.target_radius)
+    effective_radius = subject.target_radius * target_radius_multiplier
+    correct_targets_touches = count_correctly_touched_targets(trial, effective_radius)
 
     if correct_targets_touches < correct_targets_minimum:
         raise ValueError(
             f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
             f"but the minimum required is {correct_targets_minimum}.")
 
-    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject)
+    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject, effective_radius)
 
 
 def cut_trial_at_minimum_correct_targets(
         trial: TMTTrial,
         correct_targets_minimum: int,
         subject: TMTSubject,
+        effective_radius: Optional[float] = None
 ) -> TMTTrial:
     """
     Cuts the trial at the time corresponding to reaching the minimum correct target touches.
@@ -81,6 +86,7 @@ def cut_trial_at_minimum_correct_targets(
         trial (TMTTrial): The trial to be cut.
         correct_targets_minimum (int): The required number of correct touches.
         subject (TMTSubject): The subject with target_radius used to determine correct touches.
+        effective_radius (Optional[float]): The effective radius to use for target detection.
 
     Returns:
         TMTTrial: The trial cut at the appropriate time.
@@ -88,7 +94,9 @@ def cut_trial_at_minimum_correct_targets(
     Raises:
         ValueError: If the trial does not contain the required number of correct target segments.
     """
-    intra_target_interval: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(trial, subject)
+    intra_target_interval: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(
+        trial, subject, effective_radius
+    )
 
     if len(intra_target_interval) < correct_targets_minimum:
         raise ValueError(f"Trial {trial.id} has less than {correct_targets_minimum} correct targets.")

@@ -19,7 +19,8 @@ class SamplingPeriodCalculator(BaseMetricCalculator):
         trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]],
         calculate_crosses: bool,
         speed_threshold,
-        consecutive_points
+        consecutive_points,
+        target_radius_multiplier: float
     ) -> dict:
         period_metrics = compute_sampling_period_metrics(trial)
 

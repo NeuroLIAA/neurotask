@@ -10,11 +10,11 @@ from neurotask.tmt.model.tmt_model import (
 from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subject
 
 
-def _compute_metrics(trial: TMTTrial, subject: TMTSubject, speed_threshold: float, 
+def _compute_metrics(trial: TMTTrial, subject: TMTSubject, speed_threshold: float,
                      consecutive_points: int, prefix: str = None) -> dict:
     """
     Compute segmentation metrics using SegmentationMetricCalculator.
-    
+
     :param trial: TMTTrial object
     :param subject: TMTSubject object
     :param speed_threshold: Speed threshold for segmentation (must be positive)
@@ -31,6 +31,7 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject, speed_threshold: floa
         calculate_crosses=False,
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points,
+        target_radius_multiplier=1.0,
     )
 
 

@@ -25,7 +25,7 @@ from ..segmentation.segmentation_metric import SegmentationMetricCalculator
 
 def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
                               speed_threshold: float, consecutive_points: int, cut_criteria: CutCriteria,
-                              calculate_crosses: bool) -> List[Dict[str, Any]]:
+                              calculate_crosses: bool, target_radius_multiplier: float) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
     for valid and invalid trials of a single subject.
@@ -45,8 +45,12 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
     :param consecutive_points: The number of consecutive points to consider.
     :param cut_criteria: The criteria to use for cutting trials; if None, no cutting is performed.
     :param calculate_crosses: Whether to calculate crosses.
+    :param target_radius_multiplier: Multiplier to apply to the target radius.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
+    # Calculate effective radius
+    effective_radius = subject.target_radius * target_radius_multiplier
+
     rows = []
 
     for trial in subject.testing_trials:
@@ -78,14 +82,15 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
             # Apply cut criteria if provided.
             if cut_criteria is not None:
                 processed_trial = _attempt_cut_trial(
-                    trial, correct_targets_minimum, subject, subject_id, cut_criteria, speed_threshold, rows
+                    trial, correct_targets_minimum, subject, subject_id, cut_criteria, speed_threshold, rows,
+                    target_radius_multiplier
                 )
                 if processed_trial is None:
                     continue
 
             # Compute target touches.
             correct_touches = count_correctly_touched_targets(
-                processed_trial, subject.target_radius
+                processed_trial, effective_radius
             )
 
             # Check if the trial meets the minimum correct touches.
@@ -108,11 +113,11 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
             if cut_criteria is not None:
                 non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
-                                                                  speed_threshold, subject)
+                                                                  speed_threshold, subject, target_radius_multiplier)
                 valid_row.update(non_cut_trial_metrics)
 
             cut_trial_metrics = get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial,
-                                                      speed_threshold, subject)
+                                                      speed_threshold, subject, target_radius_multiplier)
             valid_row.update(cut_trial_metrics)
 
             rows.append(valid_row)
@@ -155,7 +160,8 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
     return rows
 
 
-def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
+def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject,
+                          target_radius_multiplier: float):
     metric_calculators = get_cut_trial_metric_calculators()
     return compute_trial_metrics(
         metric_calculators,
@@ -164,10 +170,12 @@ def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_th
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points,
         calculate_crosses=calculate_crosses,
+        target_radius_multiplier=target_radius_multiplier,
     )
 
 
-def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject):
+def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject,
+                              target_radius_multiplier: float):
     metric_calculators = get_non_cut_trial_metric_calculators()
     return compute_trial_metrics(
         metric_calculators,
@@ -176,6 +184,7 @@ def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, spee
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points,
         calculate_crosses=calculate_crosses,
+        target_radius_multiplier=target_radius_multiplier,
     )
 
 
@@ -219,7 +228,8 @@ def _attempt_cut_trial(
         subject_id: str,
         cut_criteria: CutCriteria,
         speed_threshold: float,
-        rows: List[Dict[str, Any]]
+        rows: List[Dict[str, Any]],
+        target_radius_multiplier: float
 ) -> Optional[Any]:
     """
     Attempt to cut a trial using the specified criteria.
@@ -229,7 +239,7 @@ def _attempt_cut_trial(
     :return: The processed trial if successful, or None if an error occurred.
     """
     try:
-        return cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria)
+        return cut_trial(trial, correct_targets_minimum, subject, subject_id, cut_criteria, target_radius_multiplier)
     except Exception as e:
         logging.exception(f"Cut trial error for trial {trial.id} of subject {subject_id}: {e}")
         rows.append(
@@ -316,19 +326,20 @@ def compute_trial_metrics(
         speed_threshold,
         consecutive_points,
         calculate_crosses,
+        target_radius_multiplier: float,
 ) -> Dict[str, Any]:
     """
     Itera sobre cada calculador de métricas y va acumulando
     sus resultados en un único dict.
     """
-
+    effective_radius = subject.target_radius * target_radius_multiplier
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-        get_all_trails_between_targets(trial, subject.target_radius)
+        get_all_trails_between_targets(trial, effective_radius)
     )
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points)
+                                         speed_threshold, consecutive_points, target_radius_multiplier)
     return metrics
 
 
@@ -338,7 +349,8 @@ def calculate_and_save_metrics(
         correct_targets_minimum: int,
         consecutive_points: int,
         cut_criteria: CutCriteria,
-        calculate_crosses: bool
+        calculate_crosses: bool,
+        target_radius_multiplier: float
 ) -> pd.DataFrame:
     """
     Calculate metrics for each subject in the experiment, save the results to a CSV file,
@@ -378,7 +390,8 @@ def calculate_and_save_metrics(
                 speed_threshold=threshold,
                 consecutive_points=consecutive_points,
                 cut_criteria=cut_criteria,
-                calculate_crosses=calculate_crosses
+                calculate_crosses=calculate_crosses,
+                target_radius_multiplier=target_radius_multiplier
             )
             rows.extend(subject_rows)
         except Exception as e:
