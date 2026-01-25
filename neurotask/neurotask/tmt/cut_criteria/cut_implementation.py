@@ -95,7 +95,7 @@ def cut_trial_at_minimum_correct_targets(
         ValueError: If the trial does not contain the required number of correct target segments.
     """
     intra_target_interval: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(
-        trial, subject, effective_radius
+        trial, effective_radius
     )
 
     if len(intra_target_interval) < correct_targets_minimum:

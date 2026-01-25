@@ -11,7 +11,8 @@ class ZigZagAmplitude(BaseMetricCalculator):
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points, target_radius_multiplier: float) -> dict:
 
-        intra_target_intervals = get_intra_target_intervals(trial, subject)
+        effective_radius = subject.target_radius * target_radius_multiplier
+        intra_target_intervals = get_intra_target_intervals(trial, effective_radius)
 
         letter_to_number_key = self.get_metric_name('letter_to_number_latency')
         number_to_letter_key = self.get_metric_name('number_to_letter_latency')
