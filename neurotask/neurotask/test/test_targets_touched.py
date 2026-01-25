@@ -72,7 +72,7 @@ class TestTargetTouchFunctions:
         target_radius = 5.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([], cursor_trail[0]),
             ([], cursor_trail[1]),
@@ -80,7 +80,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (None, cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -88,7 +88,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 0
 
     def test_all_targets_touched_correctly(self):
@@ -121,7 +121,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[1]], cursor_trail[1]),
@@ -130,7 +130,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (stimuli[1], cursor_trail[1]),
@@ -139,7 +139,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 4
 
     def test_partial_completion(self):
@@ -171,7 +171,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[1]], cursor_trail[1]),
@@ -179,7 +179,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (stimuli[1], cursor_trail[1]),
@@ -187,7 +187,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 2
 
     def test_targets_touched_out_of_order(self):
@@ -221,7 +221,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[2]], cursor_trail[1]),
@@ -231,7 +231,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -241,7 +241,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 3
 
     def test_multiple_overlapping_targets(self):
@@ -270,19 +270,19 @@ class TestTargetTouchFunctions:
         target_radius = 2.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0], stimuli[1]], cursor_trail[0]),
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 1
 
     def test_staying_on_target_multiple_points(self):
@@ -316,7 +316,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[0]], cursor_trail[1]),
@@ -327,7 +327,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -338,7 +338,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 3
 
     def test_going_back_and_forth(self):
@@ -372,7 +372,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([], cursor_trail[1]),
@@ -383,7 +383,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -394,7 +394,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 3
 
     def test_empty_cursor_trail(self):
@@ -420,15 +420,15 @@ class TestTargetTouchFunctions:
         target_radius = 5.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 0
 
     def test_single_target_trial(self):
@@ -456,21 +456,21 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[0]], cursor_trail[1]),
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (None, cursor_trail[1]),
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 1
 
     def test_with_custom_start(self):
@@ -505,7 +505,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[2]),
             ([stimuli[1]], cursor_trail[3]),
@@ -513,7 +513,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[2]),
             (stimuli[1], cursor_trail[3]),
@@ -521,7 +521,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 3
 
     def test_boundary_case_exactly_at_radius(self):
@@ -548,21 +548,21 @@ class TestTargetTouchFunctions:
         )
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([], cursor_trail[0]),
             ([stimuli[0]], cursor_trail[1]),
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (None, cursor_trail[0]),
             (stimuli[0], cursor_trail[1]),
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 1
 
     def test_alternating_correct_incorrect_touches(self):
@@ -598,7 +598,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[3]], cursor_trail[1]),
@@ -610,7 +610,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -622,7 +622,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 4
 
     def test_large_radius_overlapping_targets(self):
@@ -654,7 +654,7 @@ class TestTargetTouchFunctions:
 
         # Test touched_targets_for_every_cursor_point
         # With large radius, each point may touch multiple targets
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         # At position (0, 0) with radius 10: touches 0 (dist 0), 1 (dist 5), 2 (dist 10, not included)
         # At position (5, 0) with radius 10: touches 0 (dist 5), 1 (dist 0), 2 (dist 5)
         # At position (10, 0) with radius 10: touches 0 (dist 10, not included), 1 (dist 5), 2 (dist 0)
@@ -666,7 +666,7 @@ class TestTargetTouchFunctions:
 
         # Test correct_touched_targets_for_every_cursor_point
         # Should still follow sequential order
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (stimuli[1], cursor_trail[1]),
@@ -674,7 +674,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 3
 
     def test_cursor_moving_in_and_out_of_target(self):
@@ -706,7 +706,7 @@ class TestTargetTouchFunctions:
         target_radius = 1.5
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([], cursor_trail[0]),
             ([], cursor_trail[1]),
@@ -716,7 +716,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (None, cursor_trail[0]),
             (None, cursor_trail[1]),
@@ -726,7 +726,7 @@ class TestTargetTouchFunctions:
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 2
 
     def test_two_target_simple_trial(self):
@@ -755,21 +755,21 @@ class TestTargetTouchFunctions:
         target_radius = 1.0
 
         # Test touched_targets_for_every_cursor_point
-        touched_result = touched_targets_for_every_cursor_point(trial, target_radius)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_touched_targets_result(touched_result, [
             ([stimuli[0]], cursor_trail[0]),
             ([stimuli[1]], cursor_trail[1]),
         ])
 
         # Test correct_touched_targets_for_every_cursor_point
-        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
         self.assert_correct_targets_result(correct_result, [
             (stimuli[0], cursor_trail[0]),
             (stimuli[1], cursor_trail[1]),
         ])
 
         # Test count_correctly_touched_targets
-        count = count_correctly_touched_targets(trial, target_radius)
+        count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 2
 
 

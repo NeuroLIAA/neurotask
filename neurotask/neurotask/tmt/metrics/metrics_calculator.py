@@ -48,9 +48,6 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
     :param target_radius_multiplier: Multiplier to apply to the target radius.
     :return: A list of dictionaries, each representing a trial (valid or invalid).
     """
-    # Calculate effective radius
-    effective_radius = subject.target_radius * target_radius_multiplier
-
     rows = []
 
     for trial in subject.testing_trials:
@@ -90,7 +87,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
             # Compute target touches.
             correct_touches = count_correctly_touched_targets(
-                processed_trial, effective_radius
+                processed_trial, subject.target_radius, target_radius_multiplier
             )
 
             # Check if the trial meets the minimum correct touches.
@@ -332,9 +329,8 @@ def compute_trial_metrics(
     Itera sobre cada calculador de métricas y va acumulando
     sus resultados en un único dict.
     """
-    effective_radius = subject.target_radius * target_radius_multiplier
     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]] = (
-        get_all_trails_between_targets(trial, effective_radius)
+        get_all_trails_between_targets(trial, subject.target_radius, target_radius_multiplier)
     )
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:

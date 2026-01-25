@@ -49,7 +49,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(1, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(1, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 1.0 (when first touching target 0)
         expected_trial = TMTTrial(
@@ -101,7 +101,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 3.0 (when first touching target 1)
         expected_trial = TMTTrial(
@@ -156,7 +156,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 2.0 (when first touching target 1)
         expected_trial = TMTTrial(
@@ -211,7 +211,7 @@ class TestCutTrialAtMinimumTargets:
 
         # Should raise error because trial only touches 1 target but requires 3
         with pytest.raises(ValueError, match="has 1 correct target touches"):
-            cut_trial_at_minimum_targets(3, subject, "subject_1", trial)
+            cut_trial_at_minimum_targets(3, subject, "subject_1", trial, 1.0)
 
     def test_target_touched_out_of_order_not_counted(self):
         """
@@ -247,7 +247,7 @@ class TestCutTrialAtMinimumTargets:
 
         # Should raise error because only 2 correct touches (target 2 was out of order)
         with pytest.raises(ValueError, match="has 2 correct target touches"):
-            cut_trial_at_minimum_targets(3, subject, "subject_1", trial)
+            cut_trial_at_minimum_targets(3, subject, "subject_1", trial, 1.0)
 
     def test_with_custom_start(self):
         """
@@ -283,7 +283,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 3.0 (when first touching target 1)
         expected_trial = TMTTrial(
@@ -341,7 +341,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 4.0 (first touch on target 1)
         expected_trial = TMTTrial(
@@ -398,7 +398,7 @@ class TestCutTrialAtMinimumTargets:
             canvas_size=None
         )
 
-        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial)
+        cut_trial = cut_trial_at_minimum_targets(2, subject, "subject_1", trial, 1.0)
 
         # Expected trial cut at time 1.0 (first touch on correct target 1)
         expected_trial = TMTTrial(

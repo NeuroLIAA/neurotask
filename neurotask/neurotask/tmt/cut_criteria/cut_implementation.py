@@ -62,22 +62,21 @@ def cut_trial_at_minimum_targets(
     Raises:
         ValueError: If the trial does not meet the required number of correct target touches.
     """
-    effective_radius = subject.target_radius * target_radius_multiplier
-    correct_targets_touches = count_correctly_touched_targets(trial, effective_radius)
+    correct_targets_touches = count_correctly_touched_targets(trial, subject.target_radius, target_radius_multiplier)
 
     if correct_targets_touches < correct_targets_minimum:
         raise ValueError(
             f"Trial {trial.id} of subject {subject_id} has {correct_targets_touches} correct target touches, "
             f"but the minimum required is {correct_targets_minimum}.")
 
-    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject, effective_radius)
+    return cut_trial_at_minimum_correct_targets(trial, correct_targets_minimum, subject, target_radius_multiplier)
 
 
 def cut_trial_at_minimum_correct_targets(
         trial: TMTTrial,
         correct_targets_minimum: int,
         subject: TMTSubject,
-        effective_radius: Optional[float] = None
+        target_radius_multiplier: float
 ) -> TMTTrial:
     """
     Cuts the trial at the time corresponding to reaching the minimum correct target touches.
@@ -86,7 +85,7 @@ def cut_trial_at_minimum_correct_targets(
         trial (TMTTrial): The trial to be cut.
         correct_targets_minimum (int): The required number of correct touches.
         subject (TMTSubject): The subject with target_radius used to determine correct touches.
-        effective_radius (Optional[float]): The effective radius to use for target detection.
+        target_radius_multiplier (float): The radius multiplier to use for target detection.
 
     Returns:
         TMTTrial: The trial cut at the appropriate time.
@@ -95,7 +94,7 @@ def cut_trial_at_minimum_correct_targets(
         ValueError: If the trial does not contain the required number of correct target segments.
     """
     intra_target_interval: list[tuple[TMTTarget, CursorInfo, CursorInfo]] = get_intra_target_intervals(
-        trial, effective_radius
+        trial, subject.target_radius, target_radius_multiplier
     )
 
     if len(intra_target_interval) < correct_targets_minimum:

@@ -11,8 +11,7 @@ class TargetTime(BaseMetricCalculator):
         if subject is None:
             raise ValueError("Subject must be provided")
 
-        effective_radius = subject.target_radius * target_radius_multiplier
-        intra_time = calculate_intra_target_time(trial, effective_radius)
+        intra_time = calculate_intra_target_time(trial, subject.target_radius, target_radius_multiplier)
         metrics[self.get_metric_name('intra_target_time')] = intra_time
         metrics[self.get_metric_name('inter_target_time')] = calculate_inter_target_time(trial, intra_time)
 
@@ -21,7 +20,8 @@ class TargetTime(BaseMetricCalculator):
 
 def get_intra_target_intervals(
         trial: TMTTrial,
-        target_radius: float
+        target_radius: float,
+        multiplier: float
 ) -> list[tuple[TMTTarget, CursorInfo, CursorInfo]]:
     """
     Identify continuous intervals where the cursor is on a correct target.
@@ -35,14 +35,15 @@ def get_intra_target_intervals(
     - We reach the last cursor point (interval ends at that point)
 
     :param trial: TMTTrial instance
-    :param target_radius: The target radius for touch detection (e.g., effective_radius)
+    :param target_radius: The target radius for touch detection
+    :param multiplier: The radius multiplier
     :return: List of (target, start_cursor, end_cursor) tuples
     """
     if not trial.cursor_trail:
         return []
 
     # Get correct touched targets for every cursor point
-    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
 
     if not correct_touches:
         return []
@@ -87,7 +88,8 @@ def get_intra_target_intervals(
 
 def calculate_intra_target_time(
         trial: TMTTrial,
-        target_radius: float
+        target_radius: float,
+        multiplier: float
 ) -> float:
     """
     Calculate the intra-target time for a given trial and subject.
@@ -97,11 +99,12 @@ def calculate_intra_target_time(
     then sums the duration of all those intervals.
 
     :param trial: TMTTrial instance
-    :param target_radius: The target radius for touch detection (e.g., effective_radius)
+    :param target_radius: The target radius for touch detection
+    :param multiplier: The radius multiplier
     :return: Total time spent on correct targets in seconds
     """
     # Get all intervals where cursor is on correct targets
-    intervals = get_intra_target_intervals(trial, target_radius)
+    intervals = get_intra_target_intervals(trial, target_radius, multiplier)
 
     # Sum the duration of all intervals
     total_time = sum(end_cursor.time - start_cursor.time for _, start_cursor, end_cursor in intervals)

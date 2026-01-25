@@ -11,10 +11,10 @@ class SegmentationMetricCalculator(BaseMetricCalculator):
         if consecutive_points is None:
             raise ValueError("Consecutive points must be provided")
 
-        effective_radius = subject.target_radius * target_radius_multiplier
         segmentation = calculate_segmentation_trial_metrics(
             trial,
-            effective_radius,
+            subject.target_radius,
+            target_radius_multiplier,
             speed_threshold,
             consecutive_points
         )

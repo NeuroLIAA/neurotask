@@ -19,6 +19,26 @@ def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:
     return math.hypot(dx, dy)
 
 
+def is_inside_target(
+        cursor_pos: Coordinate,
+        target: TMTTarget,
+        target_radius: float,
+        multiplier: float
+) -> bool:
+    """
+    Determine if the cursor is inside the target's effective radius.
+
+    :param cursor_pos: The cursor position.
+    :param target: The target to check.
+    :param target_radius: The base target radius.
+    :param multiplier: The radius multiplier.
+    :return: True if cursor is inside the target's effective radius.
+    """
+    effective_radius = target_radius * multiplier
+    distance = calculate_distance(cursor_pos, target.position)
+    return distance < effective_radius
+
+
 def calculate_total_distance(trial: TMTTrial):
     """
     Calculate the total distance of the cursor trail in a TMT trial.
