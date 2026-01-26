@@ -30,6 +30,7 @@ def _compute_metrics(
         calculate_crosses=False,
         speed_threshold=None,
         consecutive_points=None,
+        target_radius_multiplier=1.0,
     )
 
 

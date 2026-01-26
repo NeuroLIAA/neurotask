@@ -12,7 +12,7 @@ from neurotask.tmt.metrics.speed_metrics import (
     NonMonotonicTimeError,
     SpeedResult
 )
-from ..metrics.distance_calculation import calculate_distance
+from ..metrics.distance_calculation import calculate_distance, is_inside_target
 from ..metrics.targets_touched import touched_targets_for_every_cursor_point
 from ..model.tmt_model import CursorInfo, TMTTrial, TMTExperiment, Coordinate, TMTSubject, TrialType
 
@@ -90,13 +90,14 @@ def speed_decreases_over_consecutive_points(
 def classify_cursor_positions_with_hesitation(
         tmt_trial: TMTTrial,
         target_radius: float,
+        multiplier: float,
         speed_threshold,
         consecutive_points=5
 ) -> List[Tuple[str, CursorInfo]]:
     classified_positions = []
     cursor_trail = tmt_trial.get_cursor_trail_from_start()
     speeds = calculate_speeds_between_cursor_positions_with_validity(tmt_trial)
-    over_target_flags = calculate_over_targets(tmt_trial, target_radius)
+    over_target_flags = calculate_over_targets(tmt_trial, target_radius, multiplier)
 
     # Invariant: one over_target flag per cursor point
     assert len(over_target_flags) == len(cursor_trail), (
@@ -139,6 +140,7 @@ def classify_cursor_positions_with_hesitation(
 def calculate_over_targets(
     trial: TMTTrial,
     target_radius: float,
+    multiplier: float,
 ) -> List[Tuple[bool, Coordinate]]:
     """
     Returns, for each cursor point:
@@ -151,7 +153,7 @@ def calculate_over_targets(
     - The expected target advances ONLY when the cursor leaves the current target.
     - After the last target is reached, it remains as reference for all remaining points.
     """
-    touched_info = touched_targets_for_every_cursor_point(trial, target_radius)
+    touched_info = touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
 
     over_target_flags: List[Tuple[bool, Coordinate]] = []
 
@@ -330,8 +332,8 @@ def calculate_hesitation_ratio(classified_positions):
     return hesitation_ratio
 
 
-def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, speed_threshold: float,
-                                         consecutive_points: int):
+def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, multiplier: float,
+                                         speed_threshold: float, consecutive_points: int):
     if speed_threshold is None:
         raise ValueError("Speed threshold must be provided.")
     if speed_threshold <= 0:
@@ -340,10 +342,13 @@ def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, 
         raise ValueError("Number of consecutive points must be provided.")
     if consecutive_points <= 0:
         raise ValueError("Number of consecutive points must be positive.")
+    if multiplier <= 0:
+        raise ValueError("Target radius multiplier must be a positive number.")
 
     classified_positions = classify_cursor_positions_with_hesitation(
         tmt_trial=trial,
         target_radius=target_radius,
+        multiplier=multiplier,
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points
     )
@@ -382,12 +387,16 @@ def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, 
 
 
 # The following functions are used to calculate the speed threshold for all subjects in the experiment.
-def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dict[str, float]:
+def calculate_speed_threshold_for_all_subjects(
+        experiment: TMTExperiment,
+        target_radius_multiplier: float
+) -> Dict[str, float]:
     """
     Calculates the speed threshold for all subjects in the experiment.
 
     Parameters:
     - experiment: TMTExperiment object.
+    - target_radius_multiplier: float, multiplier to apply to target radius.
 
     Returns:
     - speed_thresholds: dict, where keys are subject IDs and values are the speed thresholds.
@@ -396,7 +405,7 @@ def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dic
 
     for subject_id, subject in experiment.subjects.items():
         try:
-            speed_threshold = calculate_speed_threshold(subject)
+            speed_threshold = calculate_speed_threshold(subject, target_radius_multiplier)
             speed_thresholds[subject_id] = speed_threshold
         except (ValueError, InvalidSpeedError, NonMonotonicTimeError) as e:
             # Skip subject if an error occurs
@@ -406,7 +415,7 @@ def calculate_speed_threshold_for_all_subjects(experiment: TMTExperiment) -> Dic
     return speed_thresholds
 
 
-def calculate_target_segments(trial: TMTTrial, target_radius: float, number_of_targets: Optional[int] = None) -> List[
+def calculate_target_segments(trial: TMTTrial, target_radius: float, multiplier: float, number_of_targets: Optional[int] = None) -> List[
     List[CursorInfo]]:
     """
     Splits the cursor trail into segments between targets.
@@ -414,6 +423,7 @@ def calculate_target_segments(trial: TMTTrial, target_radius: float, number_of_t
     Parameters:
     - trial: TMTTrial object containing the cursor_trail and stimuli.
     - target_radius: float, the radius of the targets.
+    - multiplier: float, the radius multiplier.
 
     Returns:
     - segments: List of lists of CursorInfo, where each sublist corresponds to movement between targets.
@@ -434,10 +444,8 @@ def calculate_target_segments(trial: TMTTrial, target_radius: float, number_of_t
         while cursor_index < num_cursor_points:
             cursor_info = cursor_trail[cursor_index]
             cursor_pos = cursor_info.position
-            target_pos = target.position
-            # Calculate distance between cursor position and target position
-            distance = calculate_distance(cursor_pos, target_pos)
-            if distance <= target_radius:
+            # Check if cursor is inside target
+            if is_inside_target(cursor_pos, target, target_radius, multiplier):
                 # Cursor is over the target
                 target_found = True
                 break
@@ -460,18 +468,19 @@ def calculate_target_segments(trial: TMTTrial, target_radius: float, number_of_t
     return segments
 
 
-def extract_second_segment(trial: TMTTrial, target_radius: float) -> List[CursorInfo]:
+def extract_second_segment(trial: TMTTrial, target_radius: float, multiplier: float) -> List[CursorInfo]:
     """
     Calculates the time taken to reach the second target.
 
     Parameters:
     - trial: TMTTrial object containing the cursor_trail and stimuli.
     - target_radius: float, the radius of the targets.
+    - multiplier: float, the radius multiplier.
 
     Returns:
     - time_to_second_target: float, the time taken to reach the second target.
     """
-    segments = calculate_target_segments(trial, target_radius, number_of_targets=2)
+    segments = calculate_target_segments(trial, target_radius, multiplier, number_of_targets=2)
 
     if len(segments) < 2:
         raise ValueError("Only one target found in the trial.")
@@ -481,15 +490,15 @@ def extract_second_segment(trial: TMTTrial, target_radius: float) -> List[Cursor
     return second_segment
 
 
-def calculate_speed_threshold(subject: TMTSubject) -> float:
+def calculate_speed_threshold(subject: TMTSubject, target_radius_multiplier: float) -> float:
     """
     Calculates the median speed threshold for a subject.
     For each trial, the speed threshold is calculated as the median speed during the second segment.
     The second segment is the movement between the first and second target.
 
     Parameters:
-    - trial: TMTTrial object containing the cursor_trail and stimuli.
-    - target_radius: float, the radius of the targets.
+    - subject: TMTSubject object containing the trials.
+    - target_radius_multiplier: float, multiplier to apply to target radius.
 
     Returns:
     - speed: float, the average speed during the second segment.
@@ -501,7 +510,7 @@ def calculate_speed_threshold(subject: TMTSubject) -> float:
         if trial.trial_type == TrialType.PART_B:
             continue
         try:
-            second_segment = extract_second_segment(trial, subject.target_radius)
+            second_segment = extract_second_segment(trial, subject.target_radius, target_radius_multiplier)
             segment_speed = calculate_segment_speed(second_segment)
             speeds.append(segment_speed)
         except ValueError:

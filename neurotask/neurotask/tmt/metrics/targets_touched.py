@@ -1,16 +1,16 @@
 from typing import List, Tuple, Optional
 
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
-from .distance_calculation import calculate_distance
+from .distance_calculation import calculate_distance, is_inside_target
 from ..model.tmt_model import TMTTrial, TMTTarget, CursorInfo, TMTSubject
 
 
 class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points) -> dict:
+                    speed_threshold, consecutive_points, target_radius_multiplier: float) -> dict:
         correct_touches = count_correctly_touched_targets(
-            trial, subject.target_radius
+            trial, subject.target_radius, target_radius_multiplier
         )
 
         metrics[self.get_metric_name('correct_targets_touches')] = correct_touches
@@ -19,7 +19,7 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
         return metrics
 
 
-def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float) -> List[
+def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float, multiplier: float) -> List[
     Tuple[List[TMTTarget], CursorInfo]]:
     """
     Returns a list of tuples, where each tuple contains a list  of targets touched at that cursor point (overlapping)
@@ -29,20 +29,19 @@ def touched_targets_for_every_cursor_point(trial: TMTTrial, target_radius: float
     trail_with_targets = []
 
     for cursor_info in trial.get_cursor_trail_from_start():
-        touched_target_list = get_touched_target_list(cursor_info, target_radius, trial)
+        touched_target_list = get_touched_target_list(cursor_info, target_radius, multiplier, trial)
         trail_with_targets.append((touched_target_list, cursor_info))
 
     return trail_with_targets
 
 
-def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial: TMTTrial) -> List[TMTTarget]:
+def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, multiplier: float, trial: TMTTrial) -> List[TMTTarget]:
     """
     Returns the list of targets that are touched by the cursor at the given cursor_info.
     """
     targets = []
     for target in trial.stimuli:
-        distance = calculate_distance(target.position, cursor_info.position)
-        if distance < target_radius:
+        if is_inside_target(cursor_info.position, target, target_radius, multiplier):
             targets.append(target)
 
     return targets
@@ -50,7 +49,8 @@ def get_touched_target_list(cursor_info: CursorInfo, target_radius: float, trial
 
 def correct_touched_targets_for_every_cursor_point(
         trial: TMTTrial,
-        target_radius: float
+        target_radius: float,
+        multiplier: float
 ) -> List[Tuple[Optional[TMTTarget], CursorInfo]]:
     """
     Returns a list of tuples for each cursor point, where each tuple contains:
@@ -62,10 +62,11 @@ def correct_touched_targets_for_every_cursor_point(
 
     :param trial: instancia de TMTTrial
     :param target_radius: radio para detección de toques
+    :param multiplier: multiplicador del radio
     :return: lista de (Optional[TMTTarget], CursorInfo) para cada punto de cursor
     """
     # Get all touched targets for every cursor point
-    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
 
     # Result list
     result: List[Tuple[Optional[TMTTarget], CursorInfo]] = []
@@ -92,7 +93,8 @@ def correct_touched_targets_for_every_cursor_point(
 
 def count_correctly_touched_targets(
         trial: TMTTrial,
-        target_radius: float
+        target_radius: float,
+        multiplier: float
 ) -> int:
     """
     Calcula cuántos targets de 'trial.stimuli' fueron efectivamente tocados
@@ -100,10 +102,11 @@ def count_correctly_touched_targets(
 
     :param trial:       instancia de TMTTrial con su lista de estímulos.
     :param target_radius: radio para detección de toques.
+    :param multiplier: multiplicador del radio.
     :return: número de targets tocados correctamente.
     """
     # Obtenemos la lista de targets correctos para cada punto de cursor
-    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius)
+    correct_touches = correct_touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
 
     # Contamos los targets únicos que fueron tocados correctamente (no None)
     # Usamos una lista para evitar problemas con TMTTarget que no es hashable
@@ -122,11 +125,13 @@ def get_incorrect_touches(
     """
     Identifica los puntos de cursor donde ocurren toques erróneos,
     siguiendo las reglas acordadas.
+    Nota: Usa multiplier=1.0 para mantener detección estricta de errores.
 
     :return: lista de CursorInfo incorrectos
     """
     # 1. Obtenemos la secuencia (touched_list, cursor_info)
-    trail = touched_targets_for_every_cursor_point(trial, target_radius)
+    # Usamos multiplier=1.0 para detección estricta de errores
+    trail = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
 
     stim_iter = iter(trial.stimuli)
     expected = next(stim_iter, None)
@@ -203,7 +208,8 @@ def get_overlapping_targets(
 
 def get_all_trails_between_targets(
         trial: TMTTrial,
-        target_radius: float
+        target_radius: float,
+        multiplier: float
 ) -> List[Tuple[TMTTarget, List[CursorInfo]]]:
     """
     Devuelve, para cada target en `trial.stimuli`, la lista de CursorInfo
@@ -220,11 +226,12 @@ def get_all_trails_between_targets(
 
     :param trial:  instancia de TMTTrial
     :param target_radius:  radio para detección de toques por `touched_targets_for_every_cursor_point`
+    :param multiplier:  multiplicador del radio
     :return: lista de (TMTTarget, List[CursorInfo]) en orden de aparición
     """
     segments: List[Tuple[TMTTarget, List[CursorInfo]]] = []
     # Secuencia (lista_de_targets, cursor_info) para cada punto de cursor
-    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius)
+    trail_with_targets = touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
 
     # Iterador único sobre la secuencia de toques/puntos
     trail_iter = iter(trail_with_targets)

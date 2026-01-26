@@ -8,7 +8,7 @@ from ..model.tmt_model import Coordinate, TMTTrial, CursorInfo, TMTSubject, TMTT
 class TotalDistanceCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
-                    speed_threshold, consecutive_points) -> dict:
+                    speed_threshold, consecutive_points, target_radius_multiplier: float) -> dict:
         metrics[self.get_metric_name('total_distance')] = calculate_total_distance(trial)
         return metrics
 
@@ -17,6 +17,26 @@ def calculate_distance(pos1: Coordinate, pos2: Coordinate) -> float:
     dx = pos1.x - pos2.x
     dy = pos1.y - pos2.y
     return math.hypot(dx, dy)
+
+
+def is_inside_target(
+        cursor_pos: Coordinate,
+        target: TMTTarget,
+        target_radius: float,
+        multiplier: float
+) -> bool:
+    """
+    Determine if the cursor is inside the target's effective radius.
+
+    :param cursor_pos: The cursor position.
+    :param target: The target to check.
+    :param target_radius: The base target radius.
+    :param multiplier: The radius multiplier.
+    :return: True if cursor is inside the target's effective radius.
+    """
+    effective_radius = target_radius * multiplier
+    distance = calculate_distance(cursor_pos, target.position)
+    return distance < effective_radius
 
 
 def calculate_total_distance(trial: TMTTrial):

@@ -32,6 +32,7 @@ class TestClassifyCursorPositionsWithHesitation:
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
+            multiplier=1.0,
             speed_threshold=1.5,
             consecutive_points=2
         )
@@ -62,6 +63,7 @@ class TestClassifyCursorPositionsWithHesitation:
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
+            multiplier=1.0,
             speed_threshold=1.5,
             consecutive_points=2
         )
@@ -92,6 +94,7 @@ class TestClassifyCursorPositionsWithHesitation:
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
+            multiplier=1.0,
             speed_threshold=1.5,
             consecutive_points=2
         )
@@ -119,6 +122,7 @@ class TestClassifyCursorPositionsWithHesitation:
         result = classify_cursor_positions_with_hesitation(
             tmt_trial=trial,
             target_radius=10.0,
+            multiplier=1.0,
             speed_threshold=1.5,
             consecutive_points=2
         )
