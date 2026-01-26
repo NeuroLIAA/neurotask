@@ -10,7 +10,7 @@ class ZigZagAmplitude(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points, target_radius_multiplier: float,
-                    time_threshold: float) -> dict:
+                    crosses_time_threshold: float) -> dict:
 
         intra_target_intervals = get_intra_target_intervals(trial, subject.target_radius, target_radius_multiplier)
 

@@ -21,7 +21,7 @@ class SamplingPeriodCalculator(BaseMetricCalculator):
         speed_threshold,
         consecutive_points,
         target_radius_multiplier: float,
-        time_threshold: float
+        crosses_time_threshold: float
     ) -> dict:
         period_metrics = compute_sampling_period_metrics(trial)
 

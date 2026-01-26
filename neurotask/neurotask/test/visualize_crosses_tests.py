@@ -222,7 +222,7 @@ def main(output_dir: str = "crosses_visualizations") -> None:
 
     For each example:
       - builds the trial
-      - runs calculate_crosses_for_trial(trial, time_threshold=500)
+      - runs calculate_crosses_for_trial(trial, crosses_time_threshold=500)
       - plots with plot_crosses_simple(cursor_trail, crosses, expected_crosses=...)
       - saves PNG to output_dir
     """
@@ -345,7 +345,7 @@ def main(output_dir: str = "crosses_visualizations") -> None:
 
         trial, subject = build_trial_and_subject(cursor_trail)
 
-        detected, cross_segments = calculate_crosses_for_trial(trial, time_threshold=500)
+        detected, cross_segments = calculate_crosses_for_trial(trial, crosses_time_threshold=500)
 
         fig, _ = plot_crosses_simple(
             cursor_trail=cursor_trail,

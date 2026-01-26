@@ -32,7 +32,7 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject, speed_threshold: floa
         speed_threshold=speed_threshold,
         consecutive_points=consecutive_points,
         target_radius_multiplier=1.0,
-        time_threshold=500,
+        crosses_time_threshold=500,
     )
 
 

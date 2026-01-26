@@ -4,14 +4,14 @@ from ..model.tmt_model import TMTTrial, Coordinate
 
 def calculate_crosses_for_trial(
     trial: TMTTrial,
-    time_threshold: float,
+    crosses_time_threshold: float,
 ) -> Tuple[int, List[Tuple[Tuple[Coordinate, Coordinate], Tuple[Coordinate, Coordinate], float]]]:
     """
     Calculates the number of times the cursor trail crosses itself, excluding segments that are very near in time.
 
     Parameters:
     - trial: TMTTrial object containing the cursor_trail.
-    - time_threshold: float, the minimum time gap (in milliseconds) between segments to consider them for intersection.
+    - crosses_time_threshold: float, the minimum time gap (in milliseconds) between segments to consider them for intersection.
       Segments with gap < threshold are excluded as "too close in time". Default: 500 ms.
 
     Returns:
@@ -58,7 +58,7 @@ def calculate_crosses_for_trial(
                 time_gap = 0.0
 
             # Skip if segments are too close in time
-            if time_gap < time_threshold:
+            if time_gap < crosses_time_threshold:
                 continue
 
             seg1 = (segments[i][0][0], segments[i][1][0])

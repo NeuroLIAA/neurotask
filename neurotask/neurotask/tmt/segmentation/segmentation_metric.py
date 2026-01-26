@@ -7,7 +7,7 @@ class SegmentationMetricCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses,
                     speed_threshold, consecutive_points, target_radius_multiplier: float,
-                    time_threshold: float) -> dict:
+                    crosses_time_threshold: float) -> dict:
 
         if consecutive_points is None:
             raise ValueError("Consecutive points must be provided")

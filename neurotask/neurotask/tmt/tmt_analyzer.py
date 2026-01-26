@@ -61,7 +61,7 @@ class TMTAnalyzer:
 
     def run(self, correct_targets_minimum: Optional[int] = None, consecutive_points: Optional[int] = None,
             cut_criteria: str = None, calculate_crosses=False, target_radius_multiplier: float = None,
-            time_threshold: float = None) -> None:
+            crosses_time_threshold: float = None) -> None:
         """
         Execute the analysis pipeline:
         1. Map the dataset to create an Experiment object.
@@ -89,8 +89,8 @@ class TMTAnalyzer:
         if target_radius_multiplier <= 0:
             raise ValueError("target_radius_multiplier must be a positive number")
 
-        if time_threshold is None:
-            raise ValueError("time_threshold must be provided")
+        if crosses_time_threshold is None:
+            raise ValueError("crosses_time_threshold must be provided")
 
         self.metrics_df = calculate_and_save_metrics(
             experiment=self.experiment,
@@ -100,7 +100,7 @@ class TMTAnalyzer:
             cut_criteria=CutCriteria(cut_criteria) if cut_criteria else None,
             calculate_crosses=calculate_crosses,
             target_radius_multiplier=target_radius_multiplier,
-            time_threshold=time_threshold
+            crosses_time_threshold=crosses_time_threshold
         )
 
     def get_metrics_dataframe(self) -> pd.DataFrame:

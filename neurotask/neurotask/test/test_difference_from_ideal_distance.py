@@ -32,7 +32,7 @@ def _compute_metrics(
         speed_threshold=None,
         consecutive_points=None,
         target_radius_multiplier=1.0,
-        time_threshold=500,
+        crosses_time_threshold=500,
     )
 
 

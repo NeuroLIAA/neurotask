@@ -9,7 +9,7 @@ class TargetsTouchesCalculator(BaseMetricCalculator):
     def add_metrics(self, metrics: dict, trial: TMTTrial, subject: TMTSubject,
                     trails_between_targets: list[tuple[TMTTarget, list[CursorInfo]]], calculate_crosses: bool,
                     speed_threshold, consecutive_points, target_radius_multiplier: float,
-                    time_threshold: float) -> dict:
+                    crosses_time_threshold: float) -> dict:
         correct_touches = count_correctly_touched_targets(
             trial, subject.target_radius, target_radius_multiplier
         )
