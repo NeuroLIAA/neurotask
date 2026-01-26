@@ -87,11 +87,15 @@ class TMTAnalyzer:
             raise ValueError("target_radius_multiplier must be provided")
 
         if target_radius_multiplier <= 0:
+
             raise ValueError("target_radius_multiplier must be a positive number")
 
-        if crosses_time_threshold is None:
-            raise ValueError("crosses_time_threshold must be provided")
+        if calculate_crosses and crosses_time_threshold is None:
+            raise ValueError("crosses_time_threshold must be provided when calculate_crosses is True")
 
+        if crosses_time_threshold <= 0:
+            raise ValueError("crosses_time_threshold must be a positive number")
+        
         self.metrics_df = calculate_and_save_metrics(
             experiment=self.experiment,
             save_path=self.output_metrics_path,
