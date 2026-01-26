@@ -342,6 +342,9 @@ def calculate_segmentation_trial_metrics(trial: TMTTrial, target_radius: float, 
         raise ValueError("Number of consecutive points must be provided.")
     if consecutive_points <= 0:
         raise ValueError("Number of consecutive points must be positive.")
+    
+    if multiplier <= 0:
+        raise ValueError("Target radius multiplier must be a positive number.")
 
     classified_positions = classify_cursor_positions_with_hesitation(
         tmt_trial=trial,
