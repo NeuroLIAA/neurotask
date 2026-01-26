@@ -25,7 +25,8 @@ from ..segmentation.segmentation_metric import SegmentationMetricCalculator
 
 def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targets_minimum: int,
                               speed_threshold: float, consecutive_points: int, cut_criteria: CutCriteria,
-                              calculate_crosses: bool, target_radius_multiplier: float) -> List[Dict[str, Any]]:
+                              calculate_crosses: bool, target_radius_multiplier: float,
+                              crosses_time_threshold: float) -> List[Dict[str, Any]]:
     """
     Generate a list of row dictionaries, each describing metrics and information
     for valid and invalid trials of a single subject.
@@ -110,11 +111,13 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
             if cut_criteria is not None:
                 non_cut_trial_metrics = get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial,
-                                                                  speed_threshold, subject, target_radius_multiplier)
+                                                                  speed_threshold, subject, target_radius_multiplier,
+                                                                  crosses_time_threshold)
                 valid_row.update(non_cut_trial_metrics)
 
             cut_trial_metrics = get_cut_trial_metrics(calculate_crosses, consecutive_points, processed_trial,
-                                                      speed_threshold, subject, target_radius_multiplier)
+                                                      speed_threshold, subject, target_radius_multiplier,
+                                                      crosses_time_threshold)
             valid_row.update(cut_trial_metrics)
 
             rows.append(valid_row)
@@ -158,7 +161,7 @@ def generate_rows_for_subject(subject_id: str, subject: TMTSubject, correct_targ
 
 
 def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject,
-                          target_radius_multiplier: float):
+                          target_radius_multiplier: float, crosses_time_threshold: float):
     metric_calculators = get_cut_trial_metric_calculators()
     return compute_trial_metrics(
         metric_calculators,
@@ -168,11 +171,12 @@ def get_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_th
         consecutive_points=consecutive_points,
         calculate_crosses=calculate_crosses,
         target_radius_multiplier=target_radius_multiplier,
+        crosses_time_threshold=crosses_time_threshold,
     )
 
 
 def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, speed_threshold, subject,
-                              target_radius_multiplier: float):
+                              target_radius_multiplier: float, crosses_time_threshold: float):
     metric_calculators = get_non_cut_trial_metric_calculators()
     return compute_trial_metrics(
         metric_calculators,
@@ -182,6 +186,7 @@ def get_non_cut_trial_metrics(calculate_crosses, consecutive_points, trial, spee
         consecutive_points=consecutive_points,
         calculate_crosses=calculate_crosses,
         target_radius_multiplier=target_radius_multiplier,
+        crosses_time_threshold=crosses_time_threshold,
     )
 
 
@@ -324,6 +329,7 @@ def compute_trial_metrics(
         consecutive_points,
         calculate_crosses,
         target_radius_multiplier: float,
+        crosses_time_threshold: float,
 ) -> Dict[str, Any]:
     """
     Itera sobre cada calculador de métricas y va acumulando
@@ -335,7 +341,8 @@ def compute_trial_metrics(
     metrics: Dict[str, Any] = {}
     for calculator in metric_calculators:
         metrics = calculator.add_metrics(metrics, trial, subject, trails_between_targets, calculate_crosses,
-                                         speed_threshold, consecutive_points, target_radius_multiplier)
+                                         speed_threshold, consecutive_points, target_radius_multiplier,
+                                         crosses_time_threshold)
     return metrics
 
 
@@ -346,7 +353,8 @@ def calculate_and_save_metrics(
         consecutive_points: int,
         cut_criteria: CutCriteria,
         calculate_crosses: bool,
-        target_radius_multiplier: float
+        target_radius_multiplier: float,
+        crosses_time_threshold: float
 ) -> pd.DataFrame:
     """
     Calculate metrics for each subject in the experiment, save the results to a CSV file,
@@ -389,7 +397,8 @@ def calculate_and_save_metrics(
                 consecutive_points=consecutive_points,
                 cut_criteria=cut_criteria,
                 calculate_crosses=calculate_crosses,
-                target_radius_multiplier=target_radius_multiplier
+                target_radius_multiplier=target_radius_multiplier,
+                crosses_time_threshold=crosses_time_threshold
             )
             rows.extend(subject_rows)
         except Exception as e:
