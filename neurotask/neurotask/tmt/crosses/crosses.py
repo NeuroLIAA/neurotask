@@ -12,7 +12,7 @@ def calculate_crosses_for_trial(
     Parameters:
     - trial: TMTTrial object containing the cursor_trail.
     - crosses_time_threshold: float, the minimum time gap (in milliseconds) between segments to consider them for intersection.
-      Segments with gap < threshold are excluded as "too close in time". Default: 500 ms.
+      Segments with gap < threshold are excluded as "too close in time".
 
     Returns:
     - num_crosses: int, the number of times the cursor trail crosses itself.
