@@ -63,6 +63,7 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject) -> dict:
         speed_threshold=None,
         consecutive_points=None,
         target_radius_multiplier=1.0,
+        time_threshold=500,
     )
 
 

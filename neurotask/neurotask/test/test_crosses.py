@@ -10,7 +10,8 @@ from neurotask.test.test_helpers import build_cursor_trail, build_trial_and_subj
 
 
 def _compute_metrics(trial: TMTTrial, subject: TMTSubject,
-                     calculate_crosses: bool = True, prefix: str = None) -> dict:
+                     calculate_crosses: bool = True, prefix: str = None,
+                     time_threshold: float = 500) -> dict:
     """
     Compute crosses metrics using CrossesMetricCalculator.
     """
@@ -24,6 +25,7 @@ def _compute_metrics(trial: TMTTrial, subject: TMTSubject,
         speed_threshold=None,
         consecutive_points=None,
         target_radius_multiplier=1.0,
+        time_threshold=time_threshold,
     )
 
 

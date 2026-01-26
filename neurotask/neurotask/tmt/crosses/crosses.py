@@ -4,7 +4,7 @@ from ..model.tmt_model import TMTTrial, Coordinate
 
 def calculate_crosses_for_trial(
     trial: TMTTrial,
-    time_threshold: float = 500,
+    time_threshold: float,
 ) -> Tuple[int, List[Tuple[Tuple[Coordinate, Coordinate], Tuple[Coordinate, Coordinate], float]]]:
     """
     Calculates the number of times the cursor trail crosses itself, excluding segments that are very near in time.
