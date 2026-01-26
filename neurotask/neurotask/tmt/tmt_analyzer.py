@@ -85,6 +85,9 @@ class TMTAnalyzer:
         if target_radius_multiplier is None:
             raise ValueError("target_radius_multiplier must be provided")
 
+        if target_radius_multiplier <= 0:
+            raise ValueError("target_radius_multiplier must be a positive number")
+
         self.metrics_df = calculate_and_save_metrics(
             experiment=self.experiment,
             save_path=self.output_metrics_path,

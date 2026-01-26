@@ -772,6 +772,307 @@ class TestTargetTouchFunctions:
         count = count_correctly_touched_targets(trial, target_radius, 1.0)
         assert count == 2
 
+    # ========== Tests for target_radius_multiplier > 1 ==========
+
+    def test_multiplier_expands_detection_radius(self):
+        """
+        When multiplier > 1, the detection radius expands.
+        A cursor that is outside the base radius but inside the expanded radius
+        should be detected.
+
+        With target_radius=5.0 and multiplier=1.15:
+        - effective_radius = 5.75
+        - cursor at distance 5.5 should be detected (5.5 < 5.75)
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+        ]
+
+        # Cursor at distance 5.5 from target (outside radius 5.0, inside 5.75)
+        cursor_trail = [
+            CursorInfo(Coordinate(5.5, 0.0), 0.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_1",
+            order_of_appearance=1,
+            rt=1.0
+        )
+
+        target_radius = 5.0
+
+        # With multiplier=1.0, should NOT detect (5.5 >= 5.0)
+        touched_result_1 = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
+        self.assert_touched_targets_result(touched_result_1, [
+            ([], cursor_trail[0]),
+        ])
+
+        correct_result_1 = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
+        self.assert_correct_targets_result(correct_result_1, [
+            (None, cursor_trail[0]),
+        ])
+
+        count_1 = count_correctly_touched_targets(trial, target_radius, 1.0)
+        assert count_1 == 0
+
+        # With multiplier=1.15, should detect (5.5 < 5.75)
+        touched_result_115 = touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_touched_targets_result(touched_result_115, [
+            ([stimuli[0]], cursor_trail[0]),
+        ])
+
+        correct_result_115 = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_correct_targets_result(correct_result_115, [
+            (stimuli[0], cursor_trail[0]),
+        ])
+
+        count_115 = count_correctly_touched_targets(trial, target_radius, 1.15)
+        assert count_115 == 1
+
+    def test_multiplier_boundary_exactly_at_expanded_radius(self):
+        """
+        Test boundary case: cursor exactly at the expanded radius distance.
+        Since is_inside_target uses strict inequality (<), cursor exactly
+        at the boundary should NOT be detected.
+
+        With target_radius=5.0 and multiplier=1.15:
+        - effective_radius = 5.75
+        - cursor at distance 5.75 should NOT be detected (5.75 < 5.75 is False)
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+        ]
+
+        # Cursor exactly at distance 5.75
+        cursor_trail = [
+            CursorInfo(Coordinate(5.75, 0.0), 0.0),
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_2",
+            order_of_appearance=1,
+            rt=1.0
+        )
+
+        target_radius = 5.0
+
+        # With multiplier=1.15, should NOT detect (5.75 < 5.75 is False)
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_touched_targets_result(touched_result, [
+            ([], cursor_trail[0]),
+        ])
+
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_correct_targets_result(correct_result, [
+            (None, cursor_trail[0]),
+        ])
+
+        count = count_correctly_touched_targets(trial, target_radius, 1.15)
+        assert count == 0
+
+    def test_multiplier_affects_correct_touches_count(self):
+        """
+        Test that multiplier affects the count of correctly touched targets.
+        Cursor passes near targets but not exactly on them.
+
+        With target_radius=5.0:
+        - multiplier=1.0: only detects target at exact position
+        - multiplier=1.15: detects targets that are slightly farther
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(20.0, 0.0)),
+            TMTTarget("2", Coordinate(40.0, 0.0)),
+        ]
+
+        # Cursor passes near but not exactly on targets 1 and 2
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),    # Exactly on target 0
+            CursorInfo(Coordinate(20.0, 5.5), 1.0),   # Near target 1 (distance 5.5)
+            CursorInfo(Coordinate(40.0, 5.5), 2.0),   # Near target 2 (distance 5.5)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_3",
+            order_of_appearance=1,
+            rt=2.0
+        )
+
+        target_radius = 5.0
+
+        # With multiplier=1.0, only target 0 is touched
+        count_1 = count_correctly_touched_targets(trial, target_radius, 1.0)
+        assert count_1 == 1, f"Expected 1 with multiplier=1.0, got {count_1}"
+
+        # With multiplier=1.15, all 3 targets are touched (5.5 < 5.75)
+        count_115 = count_correctly_touched_targets(trial, target_radius, 1.15)
+        assert count_115 == 3, f"Expected 3 with multiplier=1.15, got {count_115}"
+
+    def test_multiplier_enables_overlapping_detection(self):
+        """
+        Test that with a larger multiplier, targets that didn't overlap
+        now have overlapping detection areas.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(10.0, 0.0)),  # 10 units apart
+        ]
+
+        # Cursor between the two targets
+        cursor_trail = [
+            CursorInfo(Coordinate(5.0, 0.0), 0.0),  # Exactly in the middle
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_4",
+            order_of_appearance=1,
+            rt=1.0
+        )
+
+        target_radius = 5.0
+
+        # With multiplier=1.0, cursor at distance 5 from both targets
+        # Since 5 < 5 is False, neither target is detected
+        touched_result_1 = touched_targets_for_every_cursor_point(trial, target_radius, 1.0)
+        self.assert_touched_targets_result(touched_result_1, [
+            ([], cursor_trail[0]),
+        ])
+
+        # With multiplier=1.15, effective_radius = 5.75
+        # Distance 5 < 5.75, so BOTH targets are detected
+        touched_result_115 = touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_touched_targets_result(touched_result_115, [
+            ([stimuli[0], stimuli[1]], cursor_trail[0]),
+        ])
+
+        # For correct touches, since both are touched simultaneously,
+        # only target 0 (the expected one) counts as correct
+        correct_result_115 = correct_touched_targets_for_every_cursor_point(trial, target_radius, 1.15)
+        self.assert_correct_targets_result(correct_result_115, [
+            (stimuli[0], cursor_trail[0]),
+        ])
+
+        count_115 = count_correctly_touched_targets(trial, target_radius, 1.15)
+        assert count_115 == 1
+
+    def test_multiplier_partial_completion_near_misses(self):
+        """
+        Test a realistic scenario where user almost touches targets.
+        With the expanded radius, more targets are counted as correctly touched.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(20.0, 0.0)),
+            TMTTarget("2", Coordinate(40.0, 0.0)),
+            TMTTarget("3", Coordinate(60.0, 0.0)),
+        ]
+
+        target_radius = 5.0
+
+        # Cursor path with some "near misses"
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),    # On target 0
+            CursorInfo(Coordinate(10.0, 0.0), 1.0),   # Between targets
+            CursorInfo(Coordinate(20.0, 5.2), 2.0),   # Near target 1 (distance 5.2)
+            CursorInfo(Coordinate(30.0, 0.0), 3.0),   # Between targets
+            CursorInfo(Coordinate(40.0, 0.0), 4.0),   # On target 2
+            CursorInfo(Coordinate(50.0, 0.0), 5.0),   # Between targets
+            CursorInfo(Coordinate(60.0, 5.8), 6.0),   # Near target 3 (distance 5.8, outside expanded radius)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_5",
+            order_of_appearance=1,
+            rt=6.0
+        )
+
+        # With multiplier=1.0:
+        # - Target 0: touched (distance 0)
+        # - Target 1: NOT touched (distance 5.2 >= 5.0)
+        # - Target 2: touched (distance 0)
+        # - Target 3: NOT touched (distance 5.8 >= 5.0)
+        # But since target 1 is not touched, target 2 cannot be "correct"
+        count_1 = count_correctly_touched_targets(trial, target_radius, 1.0)
+        assert count_1 == 1, f"Expected 1 with multiplier=1.0, got {count_1}"
+
+        # With multiplier=1.15 (effective_radius = 5.75):
+        # - Target 0: touched
+        # - Target 1: touched (5.2 < 5.75)
+        # - Target 2: touched
+        # - Target 3: NOT touched (5.8 >= 5.75)
+        count_115 = count_correctly_touched_targets(trial, target_radius, 1.15)
+        assert count_115 == 3, f"Expected 3 with multiplier=1.15, got {count_115}"
+
+    def test_multiplier_consistency_all_functions(self):
+        """
+        Comprehensive test to verify consistency between all three functions
+        when using multiplier > 1.
+        """
+        stimuli = [
+            TMTTarget("0", Coordinate(0.0, 0.0)),
+            TMTTarget("1", Coordinate(15.0, 0.0)),
+            TMTTarget("2", Coordinate(30.0, 0.0)),
+        ]
+
+        target_radius = 5.0
+        multiplier = 1.15  # effective_radius = 5.75
+
+        cursor_trail = [
+            CursorInfo(Coordinate(0.0, 0.0), 0.0),    # On target 0 (correct)
+            CursorInfo(Coordinate(7.5, 0.0), 1.0),    # Between, no target
+            CursorInfo(Coordinate(15.0, 5.5), 2.0),   # Near target 1 (dist 5.5 < 5.75, correct)
+            CursorInfo(Coordinate(22.5, 0.0), 3.0),   # Between, no target
+            CursorInfo(Coordinate(30.0, 5.74), 4.0),  # Near target 2 (dist 5.74 < 5.75, correct)
+        ]
+
+        trial = TMTTrial(
+            stimuli=stimuli,
+            cursor_trail=cursor_trail,
+            trial_type=TrialType.PART_A,
+            id="test_multiplier_6",
+            order_of_appearance=1,
+            rt=4.0
+        )
+
+        # Test touched_targets_for_every_cursor_point
+        touched_result = touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
+        self.assert_touched_targets_result(touched_result, [
+            ([stimuli[0]], cursor_trail[0]),
+            ([], cursor_trail[1]),
+            ([stimuli[1]], cursor_trail[2]),
+            ([], cursor_trail[3]),
+            ([stimuli[2]], cursor_trail[4]),
+        ])
+
+        # Test correct_touched_targets_for_every_cursor_point
+        correct_result = correct_touched_targets_for_every_cursor_point(trial, target_radius, multiplier)
+        self.assert_correct_targets_result(correct_result, [
+            (stimuli[0], cursor_trail[0]),
+            (None, cursor_trail[1]),
+            (stimuli[1], cursor_trail[2]),
+            (None, cursor_trail[3]),
+            (stimuli[2], cursor_trail[4]),
+        ])
+
+        # Test count_correctly_touched_targets
+        count = count_correctly_touched_targets(trial, target_radius, multiplier)
+        assert count == 3, f"Expected 3 correctly touched targets, got {count}"
+
 
 class TestCountIncorrectTouches:
     """

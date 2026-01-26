@@ -12,7 +12,7 @@ def cut_trial(
         subject: TMTSubject,
         subject_id: str,
         cut_criteria: CutCriteria,
-        target_radius_multiplier: float = 1.0
+        target_radius_multiplier: float
 ) -> TMTTrial:
     """
     Process the given trial based on the specified cut criteria.
@@ -44,7 +44,7 @@ def cut_trial_at_minimum_targets(
         subject: TMTSubject,
         subject_id: str,
         trial: TMTTrial,
-        target_radius_multiplier: float = 1.0
+        target_radius_multiplier: float
 ) -> TMTTrial:
     """
     Cuts the trial at the point where the minimum number of correct target touches is reached.
