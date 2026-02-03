@@ -323,11 +323,11 @@ def test_all_invalid_speeds_returns_empty_list():
 
 def test_zero_accelerations_are_excluded_from_metrics():
     """
-    When acceleration is exactly zero (constant speed segments),
+    When acceleration is below threshold (< 0.0001),
     these values should be excluded from acceleration metrics.
     """
     # Speeds: 2, 2, 4 px/ms -> accelerations: 0, 2 px/ms²
-    # The zero acceleration should be excluded
+    # The zero/near-zero acceleration should be excluded
     cursor_trail = build_cursor_trail([
         (0.0, 0.0, 0.0),
         (2.0, 0.0, 1.0),   # speed = 2
