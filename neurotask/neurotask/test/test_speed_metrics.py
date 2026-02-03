@@ -319,3 +319,28 @@ def test_all_invalid_speeds_returns_empty_list():
     speeds = calculate_speeds(cursor_trail, raise_on_error=False)
 
     assert len(speeds) == 0
+
+
+def test_zero_accelerations_are_excluded_from_metrics():
+    """
+    When acceleration is exactly zero (constant speed segments),
+    these values should be excluded from acceleration metrics.
+    """
+    # Speeds: 2, 2, 4 px/ms -> accelerations: 0, 2 px/ms²
+    # The zero acceleration should be excluded
+    cursor_trail = build_cursor_trail([
+        (0.0, 0.0, 0.0),
+        (2.0, 0.0, 1.0),   # speed = 2
+        (4.0, 0.0, 2.0),   # speed = 2 (same as previous)
+        (8.0, 0.0, 3.0),   # speed = 4
+    ])
+    trial, subject = build_trial_and_subject(cursor_trail)
+
+    metrics = _compute_metrics(trial, subject)
+
+    # Only acceleration = 2 should be included (zero excluded)
+    assert metrics["mean_acceleration"] == pytest.approx(2.0)
+    assert metrics["std_acceleration"] == pytest.approx(0.0)
+    assert metrics["peak_acceleration"] == pytest.approx(2.0)
+    assert metrics["mean_abs_acceleration"] == pytest.approx(2.0)
+    assert metrics["peak_abs_acceleration"] == pytest.approx(2.0)
