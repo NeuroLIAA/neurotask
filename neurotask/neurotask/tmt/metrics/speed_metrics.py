@@ -58,8 +58,8 @@ def compute_speed_and_acceleration_metrics(trial: TMTTrial) -> Dict[str, Any]:
     """
     speeds = calculate_speeds_between_cursor_positions(trial)
     all_accelerations = calculate_accelerations_between_cursor_positions(trial)
-    # Exclude values close to zero (below threshold)
-    accelerations = [acc for acc in all_accelerations if abs(acc) >= 0.0001]
+    # Exclude values exactly equal to zero
+    accelerations = [acc for acc in all_accelerations if acc != 0]
     abs_accelerations = np.abs(accelerations)
     negative_accelerations = [acc for acc in accelerations if acc < 0]
 
