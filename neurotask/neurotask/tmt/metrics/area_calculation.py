@@ -4,6 +4,9 @@ import numpy as np
 from neurotask.tmt.metrics.base_metric import BaseMetricCalculator
 from neurotask.tmt.model.tmt_model import CursorInfo, TMTTarget, TMTTrial, TMTSubject
 
+# np.trapz se eliminó en numpy 2.4; np.trapezoid existe desde numpy 2.0
+_trapezoid = getattr(np, "trapezoid", None) or np.trapz
+
 
 def area_between_real_and_ideal(segment: List[CursorInfo]) -> float:
     # 1) Extraer coordenadas (x, y) de los puntos reales
@@ -47,7 +50,7 @@ def area_between_real_and_ideal_points(point_coords: np.ndarray) -> float:
     line_positions = projection_factors * ideal_length
 
     # 6) Integración por la regla del trapecio
-    area = np.trapz(perpendicular_distances, line_positions)
+    area = _trapezoid(perpendicular_distances, line_positions)
 
     return float(area)
 
