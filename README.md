@@ -6,24 +6,23 @@
 
 ## Installation
 
-You can install **neurotask** via pip: **[WORK IN PROGRESS]**
+You can install **neurotask** via pip:
 
 ```bash
-pip install pyxations
+pip install neurotask
 ```
 
-or from local package:
+or from the local repository (run from the repository root, where `pyproject.toml` is):
 
 ```bash
-cd /path/to/your/package
 pip install .
 ```
 
 If you're developing the package and want changes to the code to be immediately reflected without reinstalling, you can
-use the -e option to install the package in "editable" mode:
+use the -e option to install the package in "editable" mode, including the development dependencies:
 
 ```bash
-pip install -e .
+pip install -e ".[dev]"
 ```
 
 ## Usage Example
